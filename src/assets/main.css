@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600;700&display=swap');
+/* @import './normalize.css'; */
+@import "tailwindcss";
+@config "./tailwind.config.js";
+
+
+body {
+  font-family: 'Exo 2', sans-serif;
+  background: linear-gradient(135deg, #0a0f1f 0%, #0f172a 100%);
+  min-height: 100vh;
+  color: #e2e8f0;
+  overflow-x: hidden;
+}
+
+body {
+  --site-light-text-color: rgba(0, 0, 0, 0.88);
+  --site-dark-text-color: rgba(255, 255, 255, 0.85);
+  -webkit-font-smoothing: antialiased;
+}
+
+body[color-scheme="dark"] {
+  background: rgb(0, 0, 0);
+  color: var(--site-dark-text-color);
+}
+
+body[color-scheme="light"] {
+  background: rgb(255, 255, 255);
+  color: var(--site-light-text-color);
+}
+
+* {
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+*:before,
+*:after {
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+.operation-icon {
+  font-size: 16px;
+  margin-left: 10px;
+  cursor: pointer;
+  &:hover {
+    opacity: 0.75;
+  }
+}

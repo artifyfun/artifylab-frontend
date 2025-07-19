@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artify工坊 - 经典风</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary: #4a6fa5;
+        --primary-dark: #3a5a80;
+        --secondary: #e9e2d0;
+        --accent: #d4b483;
+        --text: #333333;
+        --text-light: #666666;
+        --light: #f8f5f0;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --radius: 8px;
+        --transition: all 0.3s ease;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--light);
+        color: var(--text);
+        line-height: 1.6;
+      }
+
+      #app {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: 100vh;
+      }
+
+      /* 顶部导航 */
+      .navbar {
+        background-color: white;
+        box-shadow: var(--shadow);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .logo-icon {
+        color: var(--primary);
+        font-size: 1.8rem;
+      }
+
+      .logo-text {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .nav-link {
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 500;
+        transition: var(--transition);
+        position: relative;
+        padding: 0.5rem 0;
+      }
+
+      .nav-link:hover {
+        color: var(--primary);
+      }
+
+      .nav-link.active {
+        color: var(--primary);
+      }
+
+      .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: var(--primary);
+        border-radius: 2px;
+      }
+
+      /* 主内容区 */
+      .main-content {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 1.5rem;
+        padding: 2rem;
+        max-width: 1600px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      /* 左侧控制面板 */
+      .control-panel {
+        background-color: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .panel-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary);
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.25rem;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .prompt-input {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: var(--radius);
+        font-family: inherit;
+        font-size: 1rem;
+        resize: vertical;
+        min-height: 120px;
+        transition: var(--transition);
+      }
+
+      .prompt-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.15);
+      }
+
+      .style-selector {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+      }
+
+      .style-option {
+        border: 2px solid #ddd;
+        border-radius: var(--radius);
+        padding: 0.75rem;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition);
+      }
+
+      .style-option:hover {
+        border-color: var(--accent);
+      }
+
+      .style-option.active {
+        border-color: var(--primary);
+        background-color: rgba(74, 111, 165, 0.05);
+      }
+
+      .style-option i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--primary);
+      }
+
+      .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .slider {
+        flex: 1;
+        height: 6px;
+        -webkit-appearance: none;
+        background: #e0e0e0;
+        border-radius: 3px;
+        outline: none;
+      }
+
+      .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+      }
+
+      .value-display {
+        min-width: 40px;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .generate-btn {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        padding: 0.9rem 1.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .generate-btn:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+      }
+
+      /* 右侧内容区 */
+      .art-display {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        gap: 1.5rem;
+      }
+
+      .canvas-container {
+        background-color: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .placeholder-art {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-light);
+      }
+
+      .placeholder-art i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 1rem;
+      }
+
+      .history-panel {
+        background-color: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+      }
+
+      .history-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      .history-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 1rem;
+      }
+
+      .history-item {
+        border-radius: var(--radius);
+        overflow: hidden;
+        aspect-ratio: 1/1;
+        background-color: #f5f5f5;
+        cursor: pointer;
+        transition: var(--transition);
+        position: relative;
+      }
+
+      .history-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .history-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .history-item .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        display: flex;
+        align-items: flex-end;
+        padding: 0.5rem;
+        color: white;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: var(--transition);
+      }
+
+      .history-item:hover .overlay {
+        opacity: 1;
+      }
+
+      /* 页脚 */
+      .footer {
+        background-color: white;
+        padding: 1.5rem 2rem;
+        text-align: center;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        border-top: 1px solid #eee;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 992px) {
+        .main-content {
+          grid-template-columns: 1fr;
+        }
+
+        .style-selector {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 576px) {
+        .navbar {
+          flex-direction: column;
+          gap: 1rem;
+          padding: 1rem;
+        }
+
+        .nav-links {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .history-items {
+          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- 顶部导航栏 -->
+      <header class="navbar">
+        <div class="logo">
+          <i class="fas fa-palette logo-icon"></i>
+          <div class="logo-text">Artify工坊</div>
+        </div>
+      </header>
+
+      <!-- 主内容区 -->
+      <main class="main-content">
+        <!-- 左侧控制面板 -->
+        <section class="control-panel">
+          <div>
+            <h2 class="panel-title">创作设置</h2>
+            <div class="form-group">
+              <label for="prompt">绘画描述</label>
+              <textarea
+                id="prompt"
+                class="prompt-input"
+                placeholder="输入您想要生成的画面描述..."
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>艺术风格</label>
+              <div class="style-selector">
+                <div class="style-option active">
+                  <i class="fas fa-landscape"></i>
+                  <div>油画</div>
+                </div>
+                <div class="style-option">
+                  <i class="fas fa-water"></i>
+                  <div>水彩</div>
+                </div>
+                <div class="style-option">
+                  <i class="fas fa-mountain"></i>
+                  <div>水墨</div>
+                </div>
+                <div class="style-option">
+                  <i class="fas fa-city"></i>
+                  <div>赛博朋克</div>
+                </div>
+                <div class="style-option">
+                  <i class="fas fa-fairy"></i>
+                  <div>奇幻</div>
+                </div>
+                <div class="style-option">
+                  <i class="fas fa-paint-brush"></i>
+                  <div>抽象</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="style-strength">风格强度</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="style-strength"
+                  class="slider"
+                  min="0"
+                  max="100"
+                  value="75"
+                />
+                <div class="value-display">75%</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="creativity">创意程度</label>
+              <div class="slider-container">
+                <input type="range" id="creativity" class="slider" min="0" max="100" value="60" />
+                <div class="value-display">60%</div>
+              </div>
+            </div>
+
+            <button class="generate-btn">
+              <i class="fas fa-magic"></i>
+              生成艺术作品
+            </button>
+          </div>
+        </section>
+
+        <!-- 右侧内容区 -->
+        <section class="art-display">
+          <!-- 画布展示区 -->
+          <div class="canvas-container">
+            <div class="placeholder-art">
+              <i class="fas fa-image"></i>
+              <h3>等待创作...</h3>
+              <p>输入描述并点击"生成"按钮开始创作</p>
+            </div>
+          </div>
+
+          <!-- 历史记录区 -->
+          <div class="history-panel">
+            <div class="history-title">
+              <h2 class="panel-title">历史记录</h2>
+              <a href="#" style="color: var(--primary); font-size: 0.9rem">查看全部</a>
+            </div>
+            <div class="history-items">
+              <div class="history-item">
+                <div class="overlay">山脉日出</div>
+              </div>
+              <div class="history-item">
+                <div class="overlay">未来城市</div>
+              </div>
+              <div class="history-item">
+                <div class="overlay">森林精灵</div>
+              </div>
+              <div class="history-item">
+                <div class="overlay">星空大海</div>
+              </div>
+              <div class="history-item">
+                <div class="overlay">抽象几何</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- 页脚 -->
+      <footer class="footer">
+        <p>© 2025 Artify工坊 - 用AI释放您的艺术创造力</p>
+      </footer>
+    </div>
+
+    <script>
+      const { createApp, ref } = Vue
+
+      createApp({
+        setup() {
+          const styles = ref([
+            { id: 1, name: '油画', icon: 'fas fa-landscape' },
+            { id: 2, name: '水彩', icon: 'fas fa-water' },
+            { id: 3, name: '水墨', icon: 'fas fa-mountain' },
+            { id: 4, name: '赛博朋克', icon: 'fas fa-city' },
+            { id: 5, name: '奇幻', icon: 'fas fa-fairy' },
+            { id: 6, name: '抽象', icon: 'fas fa-paint-brush' },
+          ])
+
+          const selectedStyle = ref(styles.value[0])
+          const prompt = ref('')
+          const styleStrength = ref(75)
+          const creativity = ref(60)
+
+          const generateArt = () => {}
+
+          return {
+            styles,
+            selectedStyle,
+            prompt,
+            styleStrength,
+            creativity,
+            generateArt,
+          }
+        },
+      }).mount('#app')
+    </script>
+  </body>
+</html>

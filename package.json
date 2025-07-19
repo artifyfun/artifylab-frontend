@@ -1,0 +1,116 @@
+{
+  "name": "artifylab-frontend",
+  "version": "0.0.1",
+  "copyright": "Copyright © 2025 ArtifyFun",
+  "homepage": "https://space.bilibili.com/1584901",
+  "private": true,
+  "type": "module",
+  "main": "./dist/lib/index.global.js",
+  "module": "./dist/lib/index.global.js",
+  "types": "./dist/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/lib/index.global.js",
+      "require": "./dist/lib/index.global.js"
+    },
+    "./style": "./dist/lib/index.css"
+  },
+  "files": [
+    "dist/lib",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "vue",
+    "comfyui",
+    "workflow",
+    "artify",
+    "ai-art"
+  ],
+  "author": {
+    "name": "ArtifyFun",
+    "email": "artifyfun@gmail.com"
+  },
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artifyfun/artifylab-frontend.git"
+  },
+  "scripts": {
+    "dev": "vite --port 5000",
+    "build:lib": "cross-env BUILD_LIB=true vite build",
+    "build:app": "vite build",
+    "build": "npm run build:lib && npm run build:app && terser public/comfy_inject.js -o dist/frontend/comfy_inject.min.js --compress --mangle && node scripts/delete-file.js dist/frontend/comfy_inject.js",
+    "build:copy": "npm run build && npm run copy:dist",
+    "copy:dist": "node scripts/copy-dist.js",
+    "preview": "vite preview",
+    "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
+    "lint:eslint": "eslint . --fix",
+    "lint": "run-s lint:*",
+    "format": "prettier --write src/",
+    "prepublishOnly": "npm run build:lib",
+    "publish:lib": "npm run build:lib && node scripts/copy-package.js && cd dist/lib && npm publish --access public",
+    "publish:lib:dry-run": "npm run build:lib && node scripts/copy-package.js && cd dist/lib && npm pack",
+    "version:patch": "npm version patch",
+    "version:minor": "npm version minor",
+    "version:major": "npm version major",
+    "release:patch": "node scripts/release.js patch",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major",
+    "release:help": "node scripts/release.js help"
+  },
+  "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
+    "@artifyfun/comfy-ui-client": "^0.3.7",
+    "@tailwindcss/vite": "^4.1.10",
+    "@vueuse/core": "^13.3.0",
+    "ant-design-vue": "^4.2.6",
+    "axios": "^1.9.0",
+    "body-parser": "^2.2.0",
+    "concurrently": "^9.2.0",
+    "cookie-parser": "^1.4.7",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.6.0",
+    "express": "^4.21.2",
+    "localforage": "^1.10.0",
+    "lodash": "^4.17.21",
+    "monaco-editor": "^0.52.2",
+    "pinia": "^3.0.1",
+    "splitpanes": "^4.0.4",
+    "tailwindcss": "^4.1.10",
+    "vite-plugin-monaco-editor": "^1.1.0",
+    "vite-plugin-monaco-editor-esm": "^2.0.2",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "vxe-pc-ui": "^4.6.20",
+    "vxe-table": "^4.13.37",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vitejs/plugin-vue-jsx": "^4.1.2",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "copyfiles": "^2.4.1",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.22.0",
+    "eslint-plugin-oxlint": "^0.16.0",
+    "eslint-plugin-vue": "~10.0.0",
+    "fs-extra": "^11.3.0",
+    "globals": "^16.0.0",
+    "less": "^4.3.0",
+    "mkdirp": "^3.0.1",
+    "npm-run-all2": "^7.0.2",
+    "oxlint": "^0.16.0",
+    "prettier": "3.5.3",
+    "rimraf": "^6.0.1",
+    "terser": "^5.43.1",
+    "unplugin-vue-components": "^28.7.0",
+    "vite": "^6.2.4",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-vue-devtools": "^7.7.2"
+  },
+  "packageManager": "pnpm@10.13.1+sha256.0f9ed48d808996ae007835fb5c4641cf9a300def2eddc9e957d9bbe4768c5f28"
+}

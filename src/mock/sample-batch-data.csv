@@ -1,0 +1,11 @@
+id,title,description,category,tags,fileName,filePath,fileSize,fileType,fileExtension,fileNameWithoutExt,width,height,createdDate,modifiedDate,author,location,camera,iso,shutterSpeed,aperture
+1,风景照片1,美丽的自然风景,风景,自然;风景;山水,landscape_001.jpg,/images/landscape_001.jpg,2048576,image/jpeg,jpg,landscape_001,1920,1080,2024-01-15,2024-01-15T10:30:00Z,张三,黄山,Canon EOS R5,100,1/125,f/8
+2,人像照片1,专业人像摄影,人像,人像;摄影;专业,portrait_001.jpg,/images/portrait_001.jpg,1536000,image/jpeg,jpg,portrait_001,1600,1200,2024-01-16,2024-01-16T14:20:00Z,李四,摄影棚,Sony A7R IV,200,1/60,f/2.8
+3,建筑照片1,现代建筑设计,建筑,建筑;现代;设计,architecture_001.jpg,/images/architecture_001.jpg,3072000,image/jpeg,jpg,architecture_001,2560,1440,2024-01-17,2024-01-17T09:15:00Z,王五,上海,Nikon Z6,400,1/100,f/11
+4,动物照片1,野生动物摄影,动物,动物;野生;自然,wildlife_001.jpg,/images/wildlife_001.jpg,4096000,image/jpeg,jpg,wildlife_001,3000,2000,2024-01-18,2024-01-18T16:45:00Z,赵六,非洲草原,Canon EOS 1DX Mark III,800,1/500,f/5.6
+5,静物照片1,精美静物摄影,静物,静物;艺术;精致,still_life_001.jpg,/images/still_life_001.jpg,1024000,image/jpeg,jpg,still_life_001,1200,800,2024-01-19,2024-01-19T11:30:00Z,钱七,工作室,Fujifilm GFX 100,100,1/30,f/16
+6,夜景照片1,城市夜景摄影,夜景,夜景;城市;灯光,night_001.jpg,/images/night_001.jpg,5120000,image/jpeg,jpg,night_001,4000,3000,2024-01-20,2024-01-20T20:00:00Z,孙八,北京,Sony A7S III,3200,1/8,f/4
+7,微距照片1,微距摄影作品,微距,微距;细节;特写,macro_001.jpg,/images/macro_001.jpg,2048000,image/jpeg,jpg,macro_001,1800,1200,2024-01-21,2024-01-21T13:20:00Z,周九,花园,Canon EOS 5D Mark IV,100,1/200,f/2.8
+8,街拍照片1,街头摄影作品,街拍,街拍;生活;纪实,street_001.jpg,/images/street_001.jpg,1536000,image/jpeg,jpg,street_001,1600,1200,2024-01-22,2024-01-22T15:10:00Z,吴十,纽约,Leica M10,400,1/125,f/8
+9,航拍照片1,无人机航拍作品,航拍,航拍;无人机;高空,aerial_001.jpg,/images/aerial_001.jpg,6144000,image/jpeg,jpg,aerial_001,5000,3000,2024-01-23,2024-01-23T10:45:00Z,郑十一,深圳,DJI Mavic 3 Pro,100,1/1000,f/2.8
+10,黑白照片1,经典黑白摄影,黑白,黑白;经典;艺术,black_white_001.jpg,/images/black_white_001.jpg,1024000,image/jpeg,jpg,black_white_001,1200,800,2024-01-24,2024-01-24T12:00:00Z,王十二,巴黎,Hasselblad X1D II,100,1/60,f/5.6 

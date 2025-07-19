@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artify工坊 - 现代风</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      :root {
+        --primary: #6c5ce7;
+        --primary-dark: #5d4aec;
+        --secondary: #00cec9;
+        --dark: #2d3436;
+        --light: #f7f9fc;
+        --gray: #a4b0be;
+        --success: #00b894;
+        --warning: #fdcb6e;
+        --danger: #ff7675;
+        --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        --transition: all 0.3s ease;
+      }
+
+      body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: var(--dark);
+      }
+
+      #app {
+        max-width: 1600px;
+        margin: 0 auto;
+      }
+
+      /* 头部样式 */
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .logo i {
+        font-size: 2.2rem;
+        color: var(--primary);
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .logo h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      /* 主内容区 */
+      .app-container {
+        display: grid;
+        grid-template-columns: 300px 1fr 300px;
+        gap: 25px;
+        height: calc(100vh - 160px);
+      }
+
+      /* 面板通用样式 */
+      .panel {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .panel-header {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .panel-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--dark);
+      }
+
+      /* 控制面板 */
+      .control-panel .control-group {
+        margin-bottom: 25px;
+      }
+
+      .control-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--dark);
+        font-size: 0.95rem;
+      }
+
+      .input-group {
+        position: relative;
+      }
+
+      .input-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray);
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 14px 14px 14px 45px;
+        border: 1px solid #e0e6ed;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: var(--transition);
+        background-color: #f8fafc;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+      }
+
+      .range-container {
+        padding: 0 10px;
+      }
+
+      .range-value {
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--primary);
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 15px;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 15px rgba(108, 92, 231, 0.3);
+      }
+
+      .btn-secondary {
+        background-color: #edf2f7;
+        color: var(--dark);
+      }
+
+      .btn-secondary:hover {
+        background-color: #e2e8f0;
+      }
+
+      /* 绘画区域 */
+      .drawing-panel {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .canvas-container {
+        flex: 1;
+        background: #f8fafc;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+        border: 1px dashed #cbd5e0;
+      }
+
+      .canvas-placeholder {
+        text-align: center;
+        color: #a0aec0;
+        padding: 20px;
+      }
+
+      .canvas-placeholder i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.3;
+      }
+
+      .canvas-placeholder p {
+        font-size: 1.1rem;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+
+      .canvas-actions {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 25px;
+      }
+
+      .action-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: var(--transition);
+        color: var(--dark);
+      }
+
+      .action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+      }
+
+      .action-btn.primary {
+        background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+        color: white;
+        width: 60px;
+        height: 60px;
+        font-size: 1.4rem;
+      }
+
+      /* 历史记录面板 */
+      .history-panel .panel-content {
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      .history-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+      }
+
+      .history-item {
+        border-radius: 15px;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        aspect-ratio: 1/1;
+        transition: var(--transition);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      }
+
+      .history-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .history-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .history-item .overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        padding: 15px;
+        color: white;
+        opacity: 0;
+        transition: var(--transition);
+      }
+
+      .history-item:hover .overlay {
+        opacity: 1;
+      }
+
+      .history-item .title {
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 5px;
+      }
+
+      .history-item .date {
+        font-size: 0.75rem;
+        opacity: 0.8;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 1200px) {
+        .app-container {
+          grid-template-columns: 280px 1fr;
+        }
+        .history-panel {
+          display: none;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .app-container {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+        .logo h1 {
+          font-size: 1.5rem;
+        }
+        .user-name {
+          display: none;
+        }
+        .btn-group {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div class="logo">
+          <i class="fas fa-palette"></i>
+          <h1>Artify工坊</h1>
+        </div>
+      </header>
+
+      <div class="app-container">
+        <!-- 左侧控制面板 -->
+        <div class="panel control-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">创作设置</h2>
+            <i class="fas fa-sliders-h"></i>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">提示词</label>
+            <div class="input-group">
+              <i class="input-icon fas fa-comment"></i>
+              <input type="text" class="form-control" placeholder="描述你想生成的画面..." />
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">风格选择</label>
+            <div class="input-group">
+              <i class="input-icon fas fa-brush"></i>
+              <select class="form-control">
+                <option>写实风格</option>
+                <option>动漫风格</option>
+                <option>油画风格</option>
+                <option>水彩风格</option>
+                <option>赛博朋克</option>
+                <option>极简主义</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">图像比例</label>
+            <div class="input-group">
+              <i class="input-icon fas fa-crop-alt"></i>
+              <select class="form-control">
+                <option>1:1 (方形)</option>
+                <option>4:3 (标准)</option>
+                <option>16:9 (宽屏)</option>
+                <option>9:16 (竖屏)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">创作强度 <span class="range-value">75%</span></label>
+            <div class="range-container">
+              <input type="range" min="0" max="100" value="75" class="form-control" />
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-secondary"><i class="fas fa-sync-alt"></i> 重置</button>
+            <button class="btn btn-primary"><i class="fas fa-magic"></i> 生成</button>
+          </div>
+        </div>
+
+        <!-- 中间绘画区域 -->
+        <div class="panel drawing-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">创作预览</h2>
+            <i class="fas fa-expand-alt"></i>
+          </div>
+
+          <div class="canvas-container">
+            <div class="canvas-placeholder">
+              <i class="fas fa-cloud"></i>
+              <p>输入提示词并点击生成按钮，AI将开始创作你的艺术作品</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧历史记录 -->
+        <div class="panel history-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">历史记录</h2>
+            <i class="fas fa-history"></i>
+          </div>
+
+          <div class="panel-content">
+            <div class="history-grid">
+              <div class="history-item">
+                <div
+                  style="
+                    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+                    height: 100%;
+                  "
+                ></div>
+                <div class="overlay">
+                  <div class="title">梦幻森林</div>
+                  <div class="date">2023-07-15</div>
+                </div>
+              </div>
+              <div class="history-item">
+                <div
+                  style="
+                    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+                    height: 100%;
+                  "
+                ></div>
+                <div class="overlay">
+                  <div class="title">未来都市</div>
+                  <div class="date">2023-07-14</div>
+                </div>
+              </div>
+              <div class="history-item">
+                <div
+                  style="
+                    background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+                    height: 100%;
+                  "
+                ></div>
+                <div class="overlay">
+                  <div class="title">夏日田园</div>
+                  <div class="date">2023-07-12</div>
+                </div>
+              </div>
+              <div class="history-item">
+                <div
+                  style="
+                    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+                    height: 100%;
+                  "
+                ></div>
+                <div class="overlay">
+                  <div class="title">沙漠落日</div>
+                  <div class="date">2023-07-10</div>
+                </div>
+              </div>
+              <div class="history-item">
+                <div
+                  style="
+                    background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+                    height: 100%;
+                  "
+                ></div>
+                <div class="overlay">
+                  <div class="title">神秘星系</div>
+                  <div class="date">2023-07-08</div>
+                </div>
+              </div>
+              <div class="history-item">
+                <div
+                  style="
+                    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                    height: 100%;
+                  "
+                ></div>
+                <div class="overlay">
+                  <div class="title">霓虹幻境</div>
+                  <div class="date">2023-07-05</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref } = Vue
+
+      createApp({
+        setup() {
+          const prompt = ref('')
+          const style = ref('写实风格')
+          const ratio = ref('1:1 (方形)')
+          const strength = ref(75)
+          const seed = ref('23981723')
+
+          return {
+            prompt,
+            style,
+            ratio,
+            strength,
+            seed,
+          }
+        },
+      }).mount('#app')
+    </script>
+  </body>
+</html>

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artify工坊 - Gradio风格</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4CAF50;
+      --primary-dark: #388E3C;
+      --secondary: #2196F3;
+      --text: #333;
+      --text-light: #666;
+      --bg: #f5f5f5;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --radius: 8px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .gradio-app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      color: var(--text-light);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title i {
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+
+    .card-title h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text-light);
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .text-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    .slider-container {
+      padding: 10px 0;
+    }
+
+    .slider {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #e0e0e0;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--primary);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .slider::-webkit-slider-thumb:hover {
+      background: var(--primary-dark);
+    }
+
+    .slider-value {
+      text-align: right;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+
+    .select-box {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background-color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .select-box:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checkbox-item input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .generate-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 20px;
+    }
+
+    .generate-btn:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .generate-btn i {
+      margin-right: 8px;
+    }
+
+    .output-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-placeholder {
+      flex: 1;
+      background: linear-gradient(135deg, #f0f0f0 25%, #e0e0e0 25%, #e0e0e0 50%, #f0f0f0 50%, #f0f0f0 75%, #e0e0e0 75%);
+      background-size: 40px 40px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      color: var(--text-light);
+      font-style: italic;
+    }
+
+    .output-image {
+      width: 100%;
+      border-radius: var(--radius);
+      display: none; /* 初始隐藏，生成图片后显示 */
+    }
+
+    .output-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 10px;
+      background-color: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .action-btn:hover {
+      background-color: #f9f9f9;
+      transform: translateY(-2px);
+    }
+
+    .action-btn.primary {
+      background-color: var(--secondary);
+      color: white;
+      border-color: var(--secondary);
+    }
+
+    .action-btn.primary:hover {
+      background-color: #0b7dda;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 30px;
+      padding: 15px 20px;
+      background-color: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      font-size: 0.9rem;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #4CAF50;
+    }
+
+    .status-dot.processing {
+      background-color: #FFC107;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .history-section {
+      margin-top: 40px;
+    }
+
+    .history-title {
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .history-item {
+      aspect-ratio: 1/1;
+      background-color: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+
+    .history-item:hover {
+      transform: scale(1.05);
+    }
+
+    .history-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: linear-gradient(135deg, #f5f5f5 25%, #e0e0e0 25%, #e0e0e0 50%, #f5f5f5 50%, #f5f5f5 75%, #e0e0e0 75%);
+      background-size: 40px 40px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 50px;
+      padding: 20px;
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background-color: var(--primary);
+      color: white;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="gradio-app">
+      <header class="header">
+        <h1>AI艺术生成器</h1>
+        <p>使用先进的AI技术将您的文字描述转化为精美艺术品，支持多种艺术风格选择</p>
+      </header>
+
+      <div class="app-container">
+        <!-- 输入区域 -->
+        <div class="card">
+          <div class="card-title">
+            <i class="fas fa-edit"></i>
+            <h2>创作参数</h2>
+          </div>
+
+          <div class="input-group">
+            <label for="prompt">提示词</label>
+            <textarea 
+              id="prompt" 
+              class="text-input" 
+              rows="4" 
+              placeholder="描述您想要生成的图像..."></textarea>
+          </div>
+
+          <div class="input-group">
+            <label for="negative-prompt">排除内容</label>
+            <textarea 
+              id="negative-prompt" 
+              class="text-input" 
+              rows="2" 
+              placeholder="您不想在图像中出现的内容..."></textarea>
+          </div>
+
+          <div class="input-group">
+            <label for="style">艺术风格</label>
+            <select id="style" class="select-box">
+              <option value="realistic">写实风格</option>
+              <option value="anime">动漫风格</option>
+              <option value="oil-painting">油画风格</option>
+              <option value="watercolor">水彩风格</option>
+              <option value="digital-art">数字艺术</option>
+              <option value="pixel-art">像素艺术</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>图像质量: <span class="slider-value">75%</span></label>
+            <div class="slider-container">
+              <input type="range" min="0" max="100" value="75" class="slider">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>创意度: <span class="slider-value">60%</span></label>
+            <div class="slider-container">
+              <input type="range" min="0" max="100" value="60" class="slider">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>高级选项</label>
+            <div class="checkbox-group">
+              <div class="checkbox-item">
+                <input type="checkbox" id="high-res">
+                <label for="high-res">高清分辨率</label>
+              </div>
+              <div class="checkbox-item">
+                <input type="checkbox" id="nsfw-filter" checked>
+                <label for="nsfw-filter">安全过滤</label>
+              </div>
+              <div class="checkbox-item">
+                <input type="checkbox" id="seed-control">
+                <label for="seed-control">随机种子控制</label>
+              </div>
+            </div>
+          </div>
+
+          <button class="generate-btn">
+            <i class="fas fa-magic"></i> 生成艺术作品
+          </button>
+        </div>
+
+        <!-- 输出区域 -->
+        <div class="card output-card">
+          <div class="card-title">
+            <i class="fas fa-image"></i>
+            <h2>生成结果</h2>
+          </div>
+
+          <div class="output-placeholder">
+            图像将在生成后显示在这里
+          </div>
+          <img src="" class="output-image" alt="生成的AI艺术作品">
+
+          <div class="output-actions">
+            <button class="action-btn">
+              <i class="fas fa-redo"></i> 重新生成
+            </button>
+            <button class="action-btn">
+              <i class="fas fa-download"></i> 下载
+            </button>
+            <button class="action-btn primary">
+              <i class="fas fa-plus"></i> 添加到画廊
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>就绪</span>
+        </div>
+        <div>模型: ArtGen-v2.5</div>
+        <div>最后生成: --:--:--</div>
+      </div>
+
+      <div class="history-section">
+        <h3 class="history-title">历史记录</h3>
+        <div class="history-grid">
+          <div class="history-item">
+            <div class="history-thumb"></div>
+          </div>
+          <div class="history-item">
+            <div class="history-thumb"></div>
+          </div>
+          <div class="history-item">
+            <div class="history-thumb"></div>
+          </div>
+          <div class="history-item">
+            <div class="history-thumb"></div>
+          </div>
+          <div class="history-item">
+            <div class="history-thumb"></div>
+          </div>
+          <div class="history-item">
+            <div class="history-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <p>
+          Artify工坊 <span class="badge">v0.0.1</span> | 
+          基于 <span class="badge">Vue3</span> 和 <span class="badge">DeepSeek</span> 技术 | 
+          © 2025 Artify工坊
+        </p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref } = Vue;
+    
+    createApp({
+      setup() {
+        const imageQuality = ref(75);
+        const creativity = ref(60);
+        const artStyle = ref('realistic');
+        
+        const generateArt = () => {
+        };
+        
+        return {
+          imageQuality,
+          creativity,
+          artStyle,
+          generateArt
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

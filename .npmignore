@@ -1,0 +1,46 @@
+# Source files
+src/
+public/
+server.js
+
+# Build outputs (except lib)
+dist/artify/
+dist/app/
+
+# Development files
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# Config files
+vite.config.js
+eslint.config.js
+jsconfig.json
+pnpm-workspace.yaml
+pnpm-lock.yaml
+
+# Documentation (except README)
+*.md
+!README.md
+!README-LIB.md
+
+# Cache
+cache/
+node_modules/
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+
+# Development scripts
+package.json
+package-lib.json
+
+# Other
+.env
+.env.local
+.env.*.local 

@@ -1,0 +1,62 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送以v开头的标签时触发
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.12.4
+        
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      
+    - name: Build application
+      run: pnpm run build:app
+      
+    - name: Create release archive
+      run: |
+        # 创建版本号（去掉v前缀）
+        VERSION=${GITHUB_REF#refs/tags/}
+        VERSION=${VERSION#v}
+        
+        # 创建压缩包
+        cd dist
+        tar -czf "../artifylab-frontend-v${VERSION}.tar.gz" artify/
+        zip -r "../artifylab-frontend-v${VERSION}.zip" artify/
+        
+        # 回到根目录
+        cd ..
+        
+        # 输出版本信息供后续步骤使用
+        echo "VERSION=${VERSION}" >> $GITHUB_ENV
+        echo "RELEASE_FILES=artifylab-frontend-v${VERSION}.tar.gz,artifylab-frontend-v${VERSION}.zip" >> $GITHUB_ENV
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          artifylab-frontend-v${{ env.VERSION }}.tar.gz
+          artifylab-frontend-v${{ env.VERSION }}.zip
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

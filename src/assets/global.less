@@ -1,0 +1,199 @@
+.full-modal {
+  &.workflow-modal {
+    .ant-modal-content {
+      height: unset;
+    }
+  }
+  .ant-modal {
+    max-width: 100%;
+    top: 0;
+    padding-bottom: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    & > div {
+      width: 100%;
+      height: 100%;
+    }
+  }
+  .ant-modal-content {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh);
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(56, 70, 102, 0.4);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(2, 8, 32, 0.4);
+  }
+  .ant-modal-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(56, 70, 102, 0.4);
+    padding: 20px 24px;
+  }
+  .ant-modal-title {
+    color: #e2e8f0;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 600;
+  }
+  .ant-modal-body {
+    flex: 1;
+    background: transparent;
+    color: #e2e8f0;
+    // padding: 24px;
+    .editor-box {
+      width: 100%;
+      height: 100%;
+      .preview-iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        user-select: none;
+      }
+    }
+  }
+  .ant-modal-footer {
+    background: transparent;
+    border-top: 1px solid rgba(56, 70, 102, 0.4);
+    padding: 16px 24px;
+  }
+}
+.ant-spin-nested-loading {
+  width: 100% !important;
+  height: 100% !important;
+  .ant-spin-container {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+/* 额外的 Ant Design Vue 组件样式覆盖 */
+.ant-message {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.ant-message-notice-content {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 70, 102, 0.4);
+  border-radius: 12px;
+  color: #e2e8f0;
+  font-family: 'Exo 2', sans-serif;
+  box-shadow: 0 8px 32px rgba(2, 8, 32, 0.4);
+}
+
+.ant-notification {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.ant-notification-notice {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 70, 102, 0.4);
+  border-radius: 12px;
+  color: #e2e8f0;
+  font-family: 'Exo 2', sans-serif;
+  box-shadow: 0 8px 32px rgba(2, 8, 32, 0.4);
+}
+
+.ant-notification-notice-message {
+  color: #e2e8f0;
+  font-family: 'Exo 2', sans-serif;
+}
+
+.ant-notification-notice-description {
+  color: #94a3b8;
+  font-family: 'Exo 2', sans-serif;
+}
+
+/* 确保所有 Ant Design Vue 组件都使用统一的字体 */
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-dropdown-menu-item,
+.ant-modal-title,
+.ant-tooltip-inner,
+.ant-spin-text,
+.ant-message-notice-content,
+.ant-notification-notice {
+  font-family: 'Exo 2', sans-serif !important;
+}
+
+/* Input 和 Select 组件样式 */
+.ant-input,
+.ant-select-selector {
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(56, 70, 102, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-input:focus,
+.ant-select-focused .ant-select-selector {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2) !important;
+}
+
+.ant-input:hover,
+.ant-select:hover .ant-select-selector {
+  border-color: rgba(14, 165, 233, 0.5) !important;
+}
+
+.ant-select-dropdown {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(56, 70, 102, 0.4) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(2, 8, 32, 0.4) !important;
+}
+
+.ant-select-item {
+  color: #e2e8f0 !important;
+  font-family: 'Exo 2', sans-serif !important;
+}
+
+.ant-select-item-option-selected {
+  background: rgba(14, 165, 233, 0.2) !important;
+  color: #0ea5e9 !important;
+}
+
+.ant-select-item-option-active {
+  background: rgba(14, 165, 233, 0.1) !important;
+  color: #0ea5e9 !important;
+}
+
+/* 确保所有表单控件都有一致的样式 */
+.ant-form-item-label > label {
+  color: #e2e8f0 !important;
+  font-family: 'Exo 2', sans-serif !important;
+}
+
+.ant-checkbox-wrapper {
+  color: #e2e8f0 !important;
+  font-family: 'Exo 2', sans-serif !important;
+}
+
+.ant-radio-wrapper {
+  color: #e2e8f0 !important;
+  font-family: 'Exo 2', sans-serif !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #6b7280; /* 更暗的灰色 */
+  opacity: 1;
+}

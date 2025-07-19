@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artify工坊 - 科技风</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family:
+          'Segoe UI',
+          'SF Pro Display',
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      :root {
+        --primary: #0ff;
+        --secondary: #9d4edd;
+        --dark: #0a0a14;
+        --darker: #06060d;
+        --card-bg: rgba(20, 20, 40, 0.7);
+        --text: #e0e0ff;
+        --text-secondary: #a0a0c0;
+      }
+
+      body {
+        background: var(--darker);
+        background-image:
+          radial-gradient(circle at 10% 20%, rgba(45, 9, 77, 0.3) 0%, transparent 30%),
+          radial-gradient(circle at 90% 80%, rgba(0, 68, 77, 0.3) 0%, transparent 30%);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+        line-height: 1.6;
+      }
+
+      .app-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      /* 头部导航 */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+        margin-bottom: 2.5rem;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+      }
+
+      .logo i {
+        font-size: 2.2rem;
+        color: var(--primary);
+      }
+
+      /* 按钮样式 */
+      .btn {
+        padding: 0.8rem 1.8rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        outline: none;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn-primary {
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        color: var(--darker);
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0, 255, 255, 0.5);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: var(--primary);
+        border: 1px solid var(--primary);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(0, 255, 255, 0.1);
+      }
+
+      /* 主标题区域 */
+      .hero {
+        text-align: center;
+        max-width: 800px;
+        margin: 3rem auto 4rem;
+        padding: 2rem;
+      }
+
+      .hero h1 {
+        font-size: 3.5rem;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(90deg, var(--primary), #b517ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.1;
+      }
+
+      .hero p {
+        font-size: 1.4rem;
+        color: var(--text-secondary);
+        margin-bottom: 2.5rem;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* 输入区域 */
+      .input-section {
+        background: var(--card-bg);
+        border: 1px solid rgba(100, 200, 255, 0.1);
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 3rem;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .input-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .section-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .section-title i {
+        color: var(--primary);
+        font-size: 1.5rem;
+      }
+
+      .input-group {
+        margin-bottom: 1.8rem;
+      }
+
+      .input-label {
+        display: block;
+        margin-bottom: 0.8rem;
+        font-weight: 500;
+        color: var(--text);
+        font-size: 1.1rem;
+      }
+
+      .text-input {
+        width: 100%;
+        padding: 1.2rem 1.5rem;
+        border-radius: 15px;
+        background: rgba(10, 15, 30, 0.6);
+        border: 1px solid rgba(100, 200, 255, 0.2);
+        color: var(--text);
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+      }
+
+      .text-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.2);
+      }
+
+      .style-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1.2rem;
+        margin-top: 1rem;
+      }
+
+      .style-card {
+        background: rgba(15, 20, 40, 0.6);
+        border-radius: 15px;
+        padding: 1.5rem 1.2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+      }
+
+      .style-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(100, 200, 255, 0.3);
+        background: rgba(20, 30, 60, 0.7);
+      }
+
+      .style-card.selected {
+        border-color: var(--primary);
+        background: rgba(0, 50, 80, 0.4);
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+      }
+
+      .style-icon {
+        font-size: 2.2rem;
+        margin-bottom: 0.8rem;
+        color: var(--primary);
+      }
+
+      .style-name {
+        font-weight: 500;
+        font-size: 1.1rem;
+      }
+
+      /* 图片展示区 */
+      .gallery-section {
+        margin-top: 3rem;
+      }
+
+      .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      .gallery-controls {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.8rem;
+      }
+
+      .art-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(100, 200, 255, 0.1);
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .art-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0, 100, 255, 0.2);
+        border-color: rgba(100, 200, 255, 0.3);
+      }
+
+      .art-image {
+        width: 100%;
+        height: 260px;
+        background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .art-image::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, transparent 0%, rgba(0, 255, 255, 0.05) 100%);
+      }
+
+      .art-info {
+        padding: 1.5rem;
+      }
+
+      .art-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      .art-meta {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+
+      /* 科技感装饰元素 */
+      .tech-element {
+        position: absolute;
+        z-index: -1;
+      }
+
+      .circle {
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(45, 9, 77, 0.3) 0%, transparent 70%);
+        position: fixed;
+        top: 10%;
+        left: 5%;
+      }
+
+      .circle-2 {
+        width: 200px;
+        height: 200px;
+        top: 60%;
+        left: 85%;
+        background: radial-gradient(circle, rgba(0, 68, 77, 0.3) 0%, transparent 70%);
+      }
+
+      .grid-line {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image:
+          linear-gradient(rgba(100, 200, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(100, 200, 255, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* 加载动画 */
+      .loader {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(0, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top: 3px solid var(--primary);
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 992px) {
+        .hero h1 {
+          font-size: 2.8rem;
+        }
+
+        .gallery-grid {
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header {
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .hero {
+          padding: 1rem;
+        }
+
+        .hero h1 {
+          font-size: 2.2rem;
+        }
+
+        .hero p {
+          font-size: 1.1rem;
+        }
+
+        .input-section {
+          padding: 1.5rem;
+        }
+
+        .style-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        }
+
+        .gallery-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="app-container">
+        <!-- 装饰元素 -->
+        <div class="tech-element circle"></div>
+        <div class="tech-element circle-2"></div>
+        <div class="tech-element grid-line"></div>
+
+        <!-- 顶部导航 -->
+        <header class="header">
+          <div class="logo">
+            <i class="fas fa-palette"></i>
+            <span>Artify工坊</span>
+          </div>
+        </header>
+
+        <!-- 主标题区 -->
+        <section class="hero">
+          <h1>释放你的创造力，让AI描绘你的想象</h1>
+          <p>输入您的创意描述，选择艺术风格，AI将生成独一无二的视觉艺术作品</p>
+        </section>
+
+        <!-- 输入区域 -->
+        <section class="input-section">
+          <div class="input-header">
+            <h2 class="section-title"><i class="fas fa-wand-magic-sparkles"></i> 创作设置</h2>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">创意描述</label>
+            <textarea
+              class="text-input"
+              rows="4"
+              placeholder="输入您想要生成的画面描述..."
+            ></textarea>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">艺术风格</label>
+            <div class="style-grid">
+              <div class="style-card selected">
+                <div class="style-icon">
+                  <i class="fas fa-landscape"></i>
+                </div>
+                <div class="style-name">数字艺术</div>
+              </div>
+
+              <div class="style-card">
+                <div class="style-icon">
+                  <i class="fas fa-paint-brush"></i>
+                </div>
+                <div class="style-name">油画</div>
+              </div>
+
+              <div class="style-card">
+                <div class="style-icon">
+                  <i class="fas fa-mountain"></i>
+                </div>
+                <div class="style-name">中国山水</div>
+              </div>
+
+              <div class="style-card">
+                <div class="style-icon">
+                  <i class="fas fa-robot"></i>
+                </div>
+                <div class="style-name">赛博朋克</div>
+              </div>
+
+              <div class="style-card">
+                <div class="style-icon">
+                  <i class="fas fa-fairy"></i>
+                </div>
+                <div class="style-name">奇幻风格</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-footer">
+            <button class="btn btn-primary" style="width: 100%; padding: 1.2rem">
+              <span class="loader"></span> AI正在生成您的作品...
+            </button>
+          </div>
+        </section>
+
+        <!-- 图片展示区 -->
+        <section class="gallery-section">
+          <div class="gallery-header">
+            <h2 class="section-title"><i class="fas fa-images"></i> 最近作品</h2>
+          </div>
+
+          <div class="gallery-grid">
+            <!-- 作品卡片 1 -->
+            <div class="art-card">
+              <div class="art-image">
+                <i
+                  class="fas fa-image"
+                  style="font-size: 4rem; color: rgba(255, 255, 255, 0.1)"
+                ></i>
+              </div>
+              <div class="art-info">
+                <div class="art-title">未来城市夜景</div>
+                <div class="art-meta">
+                  <span>赛博朋克</span>
+                  <span>2小时前</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 作品卡片 2 -->
+            <div class="art-card">
+              <div class="art-image">
+                <i
+                  class="fas fa-image"
+                  style="font-size: 4rem; color: rgba(255, 255, 255, 0.1)"
+                ></i>
+              </div>
+              <div class="art-info">
+                <div class="art-title">森林中的精灵</div>
+                <div class="art-meta">
+                  <span>奇幻风格</span>
+                  <span>昨天</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 作品卡片 3 -->
+            <div class="art-card">
+              <div class="art-image">
+                <i
+                  class="fas fa-image"
+                  style="font-size: 4rem; color: rgba(255, 255, 255, 0.1)"
+                ></i>
+              </div>
+              <div class="art-info">
+                <div class="art-title">水墨山水</div>
+                <div class="art-meta">
+                  <span>中国风</span>
+                  <span>3天前</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref } = Vue
+
+      createApp({
+        setup() {
+          const prompt = ref('')
+          const selectedStyle = ref('digital-art')
+
+          return {
+            prompt,
+            selectedStyle,
+          }
+        },
+      }).mount('#app')
+    </script>
+  </body>
+</html>

@@ -1,0 +1,65 @@
+{
+  "name": "@artifyfun/artify-lib",
+  "version": "1.0.4",
+  "description": "Vue 3 components and utilities for ComfyUI workflow management",
+  "type": "module",
+  "main": "./index.global.js",
+  "module": "./index.es.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./index.es.js",
+      "require": "./index.global.js",
+      "types": "./index.d.ts"
+    },
+    "./style": "./index.css"
+  },
+  "files": [
+    "*.js",
+    "*.d.ts",
+    "*.css",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "comfyui",
+    "workflow",
+    "artify",
+    "ai-art",
+    "components",
+    "ui-library"
+  ],
+  "author": {
+    "name": "ArtifyFun",
+    "email": "artifyfun@gmail.com"
+  },
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artifyfun/artifylab-frontend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artifyfun/artifylab-frontend/issues"
+  },
+  "homepage": "https://github.com/artifyfun/artifylab-frontend#readme",
+  "peerDependencies": {
+    "vue": "^3.0.0",
+    "vue-router": "^4.0.0",
+    "pinia": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ant-design-vue": {
+      "optional": true
+    },
+    "@ant-design/icons-vue": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
