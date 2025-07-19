@@ -270,6 +270,7 @@ const translations = {
     clearSearch: '清除搜索',
     clearFilter: '清除筛选',
     editApp: '编辑应用',
+    pleaseSetApiKey: '请先设置API Key',
 
     // 视图模式
     gridView: '网格视图',
@@ -778,6 +779,7 @@ const translations = {
     clearSearch: 'Clear Search',
     clearFilter: 'Clear Filter',
     editApp: 'Edit App',
+    pleaseSetApiKey: 'Please set API Key',
 
     // 视图模式
     gridView: 'Grid View',

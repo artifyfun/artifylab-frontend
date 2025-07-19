@@ -302,6 +302,11 @@ const handleSave = () => {
 
 // 生成应用代码的方法
 const genAppCode = async () => {
+  const apiKey = appStore.config.api_key
+  if (!apiKey) {
+    showError(t('pleaseSetApiKey'))
+    return
+  }
   if (responseLoading.value || genLoading.value) {
     return
   }
