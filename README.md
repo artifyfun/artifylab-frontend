@@ -144,6 +144,7 @@ pnpm install
 ```bash
 # 启动开发服务器
 pnpm dev
+pnpm dev:lib
 ```
 
 ### 生产构建

@@ -1,10 +1,12 @@
 const ARTIFY_LIB_NAME = "@artifyfun/artify-lib"
 
-const CDN_URLS = {
+export const CDN_URLS = {
   VUE: "https://unpkg.com/vue@3/dist/vue.global.js",
   TAILWIND: "https://cdn.tailwindcss.com",
   ARTIFY_LIB: `https://unpkg.com/${ARTIFY_LIB_NAME}/index.global.js`,
+  ARTIFY_LIB_DEV: `http://localhost:3001/index.global.js`,
   ARTIFY_LIB_CSS: `https://unpkg.com/${ARTIFY_LIB_NAME}/index.css`,
+  ARTIFY_LIB_CSS_DEV: `http://localhost:3001/index.css`,
   FONT_AWESOME: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
 };
 

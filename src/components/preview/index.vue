@@ -11,7 +11,7 @@
         'preview-iframe',
         { 'pointer-events-none': isAiWorking }
       ]"
-      :srcDoc="throttledHtml"
+      :srcDoc="formattedHtml"
     />
     <template v-if="showActions && !isAiWorking">
       <div class="preview-actions">
@@ -48,11 +48,12 @@
 </template>
 
 <script setup>
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted, computed } from 'vue'
 import { LaptopOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import PreviewActions from './components/preview-actions.vue'
 import { t } from '@/utils/i18n'
 import { showSuccess, showWarning, showInfo } from '@/utils'
+import { CDN_URLS } from '@/utils/genPrompt'
 
 const props = defineProps({
   html: {
@@ -78,6 +79,8 @@ const props = defineProps({
   },
 })
 
+const isDevMode = import.meta.env.DEV
+
 const emit = defineEmits(['click'])
 
 const previewRef = ref(null)
@@ -88,6 +91,13 @@ const autoRefresh = ref(true)
 const previousIsAiWorkingRef = ref(props.isAiWorking)
 const htmlRef = ref(props.html)
 const timerId = ref(0)
+
+const formattedHtml = computed(() => {
+  if (isDevMode) {
+    return throttledHtml.value.replace(CDN_URLS.ARTIFY_LIB, CDN_URLS.ARTIFY_LIB_DEV).replace(CDN_URLS.ARTIFY_LIB_CSS, CDN_URLS.ARTIFY_LIB_CSS_DEV)
+  }
+  return throttledHtml.value
+})
 
 // 当HTML内容改变时保存到ref中
 watch(() => props.html, (newHtml) => {

@@ -40,6 +40,7 @@
   },
   "scripts": {
     "dev": "vite --port 5000",
+    "dev:lib": "npm run build:lib && npx http-server dist/lib -p 3001 -c-1 --cors",
     "build:lib": "cross-env BUILD_LIB=true vite build",
     "build:app": "vite build",
     "build": "npm run build:lib && npm run build:app && terser public/comfy_inject.js -o dist/frontend/comfy_inject.min.js --compress --mangle && node scripts/delete-file.js dist/frontend/comfy_inject.js",

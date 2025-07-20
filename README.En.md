@@ -144,6 +144,7 @@ pnpm install
 ```bash
 # Start development server
 pnpm dev
+pnpm dev:lib
 ```
 
 ### Production Build
