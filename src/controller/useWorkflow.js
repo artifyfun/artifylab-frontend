@@ -42,53 +42,52 @@ export default function useWorkflow() {
     createGlassAlert(message, state.config.lang === 'zh' ? '错误' : 'Error')
   }
 
-  const isCached = ref(false)
-  const nodes = ref(Object.keys(app.template.prompt))
-  const finishedNodes = ref([])
-  const unFinishedNodes = ref([])
+  const totalSteps = ref(Object.keys(app.template.prompt).reduce((acc, key) => acc + (app.template.prompt[key].inputs?.steps || 1), 0))
+  const finishedSteps = ref(0)
+  const cachedIds = ref([])
+  const addIds = ref([])
   const eventEmitter = (type, data) => {
     if (type === 'message') {
       const message = JSON.parse(data.toString())
       if (message.type === 'execution_start') {
-        finishedNodes.value = []
-        state.progress = 1
+        finishedSteps.value = 0
         state.promptId = message.data.prompt_id
       }
       if (message.type === 'execution_cached') {
-        isCached.value = true
-        nodes.value = nodes.value.filter(item => !message.data.nodes.some(node => node === item))
-        state.progress = 2
-        finishedNodes.value.push(...message.data.nodes)
-        unFinishedNodes.value = nodes.value.filter(id => !finishedNodes.value.some(node => node === id) && typeof app.template.prompt[id].inputs?.steps === 'number')
-      }
-      if (message.type === 'executing') {
-        if (message.data.node === null) {
-          state.progress = 100
-        } else {
-          if (!isCached.value) {
-            if (!finishedNodes.value.some(id => id === message.data.node)) {
-              finishedNodes.value.push(message.data.node)
-              state.progress = Math.floor((finishedNodes.value.length / nodes.value.length) * 100)
+        message.data.nodes.forEach(id => {
+          if (!cachedIds.value.includes(id)) {
+            cachedIds.value.push(id)
+          }
+        })
+        cachedIds.value.forEach(id => {
+          if (Object.keys(app.template.prompt).includes(id)) {
+            if (app.template.prompt[id]?.inputs?.steps) {
+              if (!addIds.value.includes(id)) {
+                finishedSteps.value += app.template.prompt[id].inputs.steps
+                addIds.value.push(id)
+              }
+            } else {
+              if (!addIds.value.includes(id)) {
+                finishedSteps.value += 1
+                addIds.value.push(id)
+              }
             }
           }
-        }
+        })
       }
       if (message.type === 'progress') {
-        if (!isCached.value) {
-          const step =
-            ((message.data.value / message.data.max) * 100 * 0.9) / nodes.value.length / message.data.max
-          state.progress = Number((state.progress + step).toFixed(2))
-        } else {
-          state.progress = Number((message.data.value / message.data.max) * 100 * 0.9 / (unFinishedNodes.value.length || 1)).toFixed(2)
-          if (message.data.value === message.data.max) {
-            unFinishedNodes.value = unFinishedNodes.value.filter(id => id !== message.data.node)
-          }
+        if (Object.keys(app.template.prompt).includes(message.data.node) && app.template.prompt[message.data.node]?.inputs?.steps && finishedSteps.value < totalSteps.value) {
+          finishedSteps.value += 1
         }
+      }
+      state.progress = Number((finishedSteps.value / totalSteps.value) * 100).toFixed(2)
+      if (message.type === 'execution_success') {
+        state.progress = 100
       }
       state.executing = true
       state.done = false
     } else if (type === 'error') {
-      emitError(message.data)
+      emitError(data)
     }
   }
 
@@ -187,7 +186,7 @@ export default function useWorkflow() {
       Object.keys(state.inputs).forEach((key) => {
         Object.assign(app.template.prompt[key].inputs, state.inputs[key])
       })
-      finishedNodes.value = []
+      finishedSteps.value = 0
       const res = await getOutputs(app.template.prompt)
       response = handleResult(res)
     } catch (e) {
