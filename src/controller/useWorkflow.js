@@ -2,7 +2,7 @@ import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { ComfyUIClient } from '@artifyfun/comfy-ui-client'
-import { getQueryParam, downloadJSON, previewImageFullscreen, uuidv4, getSeed, postImage } from '@/utils'
+import { getQueryParam, downloadJSON, previewImageFullscreen, uuidv4, getSeed, postImage, createGlassAlert } from '@/utils'
 
 export default function useWorkflow() {
   const app = window.appTemplate
@@ -39,11 +39,13 @@ export default function useWorkflow() {
     state.executing = false
     state.progress = 0
     state.done = false
+    createGlassAlert(message, state.config.lang === 'zh' ? '错误' : 'Error')
   }
 
-  const nodes = Object.keys(app.template.prompt)
+  const isCached = ref(false)
+  const nodes = ref(Object.keys(app.template.prompt))
   const finishedNodes = ref([])
-
+  const unFinishedNodes = ref([])
   const eventEmitter = (type, data) => {
     if (type === 'message') {
       const message = JSON.parse(data.toString())
@@ -53,28 +55,40 @@ export default function useWorkflow() {
         state.promptId = message.data.prompt_id
       }
       if (message.type === 'execution_cached') {
-        state.progress = Math.floor((message.data.nodes.length / nodes.length) * 100)
+        isCached.value = true
+        nodes.value = nodes.value.filter(item => !message.data.nodes.some(node => node === item))
+        state.progress = 2
         finishedNodes.value.push(...message.data.nodes)
+        unFinishedNodes.value = nodes.value.filter(id => !finishedNodes.value.some(node => node === id) && typeof app.template.prompt[id].inputs?.steps === 'number')
       }
       if (message.type === 'executing') {
         if (message.data.node === null) {
           state.progress = 100
         } else {
-          if (!finishedNodes.value.some(item => item.id === message.data.node.id)) {
-            finishedNodes.value.push(message.data.node)
-            state.progress = Math.floor((finishedNodes.value.length / nodes.length) * 100)
+          if (!isCached.value) {
+            if (!finishedNodes.value.some(id => id === message.data.node)) {
+              finishedNodes.value.push(message.data.node)
+              state.progress = Math.floor((finishedNodes.value.length / nodes.value.length) * 100)
+            }
           }
         }
       }
       if (message.type === 'progress') {
-        const step =
-          ((message.data.value / message.data.max) * 100 * 1) / nodes.length / message.data.max
-        state.progress = Number((state.progress + step).toFixed(2))
+        if (!isCached.value) {
+          const step =
+            ((message.data.value / message.data.max) * 100 * 0.9) / nodes.value.length / message.data.max
+          state.progress = Number((state.progress + step).toFixed(2))
+        } else {
+          state.progress = Number((message.data.value / message.data.max) * 100 * 0.9 / (unFinishedNodes.value.length || 1)).toFixed(2)
+          if (message.data.value === message.data.max) {
+            unFinishedNodes.value = unFinishedNodes.value.filter(id => id !== message.data.node)
+          }
+        }
       }
       state.executing = true
       state.done = false
     } else if (type === 'error') {
-      emitError()
+      emitError(message.data)
     }
   }
 
@@ -177,13 +191,14 @@ export default function useWorkflow() {
       const res = await getOutputs(app.template.prompt)
       response = handleResult(res)
     } catch (e) {
-      const message = `工作流执行失败: ${e.message}`
+      const message = state.config.lang === 'zh' ? `工作流执行失败` : `Workflow execution failed`
+      console.log(e)
       emitError(message)
       throw new Error(message)
     }
 
     if (!response) {
-      const message = '工作流执行失败: 未获取到输出数据'
+      const message = state.config.lang === 'zh' ? `工作流执行失败: 未获取到输出数据` : `Workflow execution failed: No output data`
       emitError(message)
       throw new Error(message)
     }
