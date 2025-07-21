@@ -63,7 +63,9 @@ export default function useWorkflow() {
           if (Object.keys(app.template.prompt).includes(id)) {
             if (app.template.prompt[id]?.inputs?.steps) {
               if (!addIds.value.includes(id)) {
-                finishedSteps.value += app.template.prompt[id].inputs.steps
+                if (!['BasicScheduler'].includes(app.template.prompt[id].class_type)) {
+                  finishedSteps.value += app.template.prompt[id].inputs.steps
+                }
                 addIds.value.push(id)
               }
             } else {
@@ -76,7 +78,9 @@ export default function useWorkflow() {
         })
       }
       if (message.type === 'progress') {
-        if (Object.keys(app.template.prompt).includes(message.data.node) && app.template.prompt[message.data.node]?.inputs?.steps && finishedSteps.value < totalSteps.value) {
+        if (['SamplerCustomAdvanced'].includes(app.template.prompt[message.data.node].class_type)) {
+          finishedSteps.value += 1
+        } else if (Object.keys(app.template.prompt).includes(message.data.node) && app.template.prompt[message.data.node]?.inputs?.steps && finishedSteps.value < totalSteps.value) {
           finishedSteps.value += 1
         }
       }
@@ -179,9 +183,11 @@ export default function useWorkflow() {
     try {
       Object.keys(app.template.prompt).forEach((key) => {
         const item = app.template.prompt[key]
-        if (typeof item.inputs?.seed === 'number') {
-          item.inputs.seed = getSeed(15)
-        }
+        Object.keys(item.inputs).forEach(inputKey => {
+          if (inputKey.includes('seed') && typeof item.inputs[inputKey] === 'number') {
+            item.inputs[inputKey] = getSeed(15)
+          }
+        })
       })
       Object.keys(state.inputs).forEach((key) => {
         Object.assign(app.template.prompt[key].inputs, state.inputs[key])
