@@ -77,7 +77,7 @@ const realtimeCode = ref('')
 // 计算预览HTML，优先使用实时编辑的代码
 const previewHtml = computed(() => {
   const code = realtimeCode.value || props.app.code || ''
-  return genHtml({ ...props.app, code }, appStore.config)
+  return genHtml({ ...props.app, code }, code, appStore.config)
 })
 
 // 监听模态框显示状态，初始化代码内容

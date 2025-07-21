@@ -2,180 +2,210 @@
   <a-modal
     :open="show"
     @update:open="handleModalUpdate"
-    :title="currentStep === 'style' ? t('selectAppStyle') : t('appBuilding')"
+    :title="t('appBuilding')"
     width="100%"
-    :wrap-class-name="`full-modal ${currentStep === 'style' ? 'style-modal' : ''}`"
+    :wrap-class-name="`full-modal ${currentStep === 'style' && buildMode === 'ai' ? 'style-modal' : buildMode}`"
     destroyOnClose
     :maskClosable="false"
     @cancel="handleCancel"
   >
-    <template #footer>
-      <!-- 风格选择步骤的按钮 -->
-      <div v-if="currentStep === 'style'">
-        <a-button @click="handleCancel">{{ t('cancel') }}</a-button>
-        <a-button type="primary" :loading="optimizePromptLoading" :disabled="!canProceed" @click="handleStyleConfirm">
-          {{ t('confirm') }}
-        </a-button>
-      </div>
+    <!-- Build Mode Selector -->
+    <div class="flex gap-4 mb-6">
+      <a-radio-group v-model:value="buildMode" button-style="solid">
+        <a-radio-button value="local">{{ t('localBuild') }}</a-radio-button>
+        <a-radio-button value="ai">{{ t('aiBuild') }}</a-radio-button>
+      </a-radio-group>
+    </div>
 
-      <!-- 代码生成步骤的按钮 -->
+    <template #footer>
+      <!-- Local build footer -->
+      <div v-if="buildMode === 'local'">
+        <a-button @click="handleCancel">{{ t('cancel') }}</a-button>
+        <a-button type="primary" @click="handleLocalSave">{{ t('save') }}</a-button>
+      </div>
+      <!-- AI build footer (original logic) -->
       <div v-else>
-        <a-button danger v-if="genLoading" @click="handleCancel">{{ t('stopBuilding') }}</a-button>
-        <a-button
-          v-if="!(genLoading || responseLoading || appStore.isLoading)"
-          @click="handleRebuild"
-          >{{ t('rebuildApp') }}</a-button
-        >
-        <a-button
-          type="primary"
-          :loading="genLoading || responseLoading || appStore.isLoading"
-          @click="handleSave"
-          >{{ t('save') }}</a-button
-        >
+        <div v-if="currentStep === 'style'">
+          <a-button @click="handleCancel">{{ t('cancel') }}</a-button>
+          <a-button type="primary" :loading="optimizePromptLoading" :disabled="!canProceed" @click="handleStyleConfirm">
+            {{ t('startBuild') }} <i class="fa-solid fa-chevron-right"></i>
+          </a-button>
+        </div>
+        <div v-else>
+          <a-button v-if="!(genLoading || responseLoading || appStore.isLoading)" @click="handleBackToStyle"><i class="fa-solid fa-chevron-left"></i> {{ t('backToStyle') }}</a-button>
+          <a-button danger v-if="genLoading" @click="handleStopBuilding">{{ t('stopBuilding') }}</a-button>
+          <a-button
+            v-if="!(genLoading || responseLoading || appStore.isLoading)"
+            @click="handleRebuild"
+            >{{ t('rebuildApp') }}</a-button
+          >
+          <a-button
+            type="primary"
+            :loading="genLoading || responseLoading || appStore.isLoading"
+            @click="handleSave"
+            >{{ t('save') }}</a-button
+          >
+        </div>
       </div>
     </template>
 
-    <!-- 风格选择步骤 -->
-    <div v-if="currentStep === 'style'" class="style-selection-container">
-      <div class="style-selection-content">
-        <div class="style-selection-header">
-          <h3 class="mb-2 text-xl font-bold text-white">{{ t('selectAppStyle') }}</h3>
-          <p class="mb-6 text-slate-300">{{ t('styleSelectionDescription') }}</p>
-        </div>
-
-        <!-- Tab切换 -->
-        <div class="style-tabs">
-          <a-tabs v-model:activeKey="activeTab" class="style-tabs-container">
-            <a-tab-pane key="preset" :tab="t('presetStyles')">
-              <!-- 预设风格选择 -->
-              <div v-if="appStore.isLoading" class="flex justify-center items-center py-12">
-                <a-spin size="large" />
-                <span class="ml-3 text-slate-300">{{ t('loadingStyles') }}</span>
-              </div>
-
-              <div v-else-if="appStore.buildStyles.length > 0" class="style-grid-container">
-                <div class="style-grid">
-                  <div
-                    v-for="style in appStore.buildStyles"
-                    :key="style.id"
-                    @click="handleChangeBuildStyle(style)"
-                    :class="[
-                      'style-card',
-                      selectedStyleId === style.id ? 'style-card-selected' : 'style-card-default',
-                    ]"
-                  >
-                    <div class="style-image-container">
-                      <img
-                        :src="style.image"
-                        :alt="style[`${appStore.config.lang}_name`]"
-                        class="style-image"
-                      />
-                      <div class="style-overlay">
-                        <div class="style-name">{{ style[`${appStore.config.lang}_name`] }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div v-else class="py-12 text-center">
-                <div class="mb-4 text-slate-400">
-                  <i class="text-2xl fas fa-exclamation-triangle"></i>
-                </div>
-                <p class="text-slate-300">{{ t('noBuildStyles') }}</p>
-              </div>
-            </a-tab-pane>
-
-            <a-tab-pane key="advanced" :disabled="!selectedStyleId">
-              <template #tab>
-                <span class="relative">
-                  {{ t('advancedConfig') }}
-                </span>
-              </template>
-              <!-- 高级配置 -->
-              <div class="advanced-config-container">
-                <div class="config-section">
-                  <h4 class="config-title">{{ t('appStyle') }}</h4>
-                  <p class="config-description">{{ t('appStyleDescription') }}</p>
-                  <div class="code-editor-container">
-                    <CodeEditor
-                      :value="customStyleCode"
-                      :language="'html'"
-                      @change="customStyleCode = $event"
-                    />
-                  </div>
-                  <div class="preview-container">
-                    <h5 class="preview-title">{{ t('preview') }}</h5>
-                    <div class="preview-frame">
-                      <Preview
-                        v-if="customStyleCode"
-                        :html="customStyleCode"
-                        :isAiWorking="false"
-                        class="style-preview"
-                      />
-                      <div v-else class="preview-placeholder">
-                        <i class="mb-2 text-2xl fas fa-eye text-slate-400"></i>
-                        <span class="text-slate-400">{{ t('previewPlaceholder') }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="config-section">
-                  <h4 class="config-title">{{ t('appFunction') }}</h4>
-                  <p class="config-description">
-                    <span>{{ t('appFunctionDescription') }}</span>
-                    <!-- <a-button
-                      type="primary"
-                      class="ml-2"
-                      :loading="optimizePromptLoading"
-                      :disabled="optimizePromptLoading"
-                      @click="handleOptimizePrompt"
-                    >
-                      {{ t('optimizePrompt') }}
-                    </a-button> -->
-                  </p>
-                  <div class="code-editor-container">
-                    <a-spin :tip="t('waitingAIResponse')" :spinning="optimizePromptLoading">
-                      <CodeEditor
-                        :value="customFunctionCode"
-                        :language="'markdown'"
-                        @change="customFunctionCode = $event"
-                      />
-                    </a-spin>
-                  </div>
-                </div>
-              </div>
-            </a-tab-pane>
-          </a-tabs>
-        </div>
-      </div>
+    <!-- Local build preview -->
+    <div v-if="buildMode === 'local'" class="editor-box">
+      <splitpanes class="default-theme">
+        <pane>
+          <CodeEditor :value="localHtml" :readonly="true" />
+        </pane>
+        <pane>
+          <Preview
+            class="preview-iframe"
+            :html="genHtml(genApp, localHtml, appStore.config)"
+            :isAiWorking="false"
+          />
+        </pane>
+      </splitpanes>
     </div>
 
-    <!-- 代码生成步骤 -->
-    <div v-else-if="currentStep === 'generate'" class="editor-box">
-      <a-spin :tip="t('waitingAIResponse')" :spinning="responseLoading || appStore.isLoading">
-        <splitpanes class="default-theme">
-          <pane>
-            <CodeEditor ref="genEditorRef" :value="genApp.code" @change="$event => genApp.code = $event" />
-          </pane>
-          <pane>
-            <Preview
-              v-if="genApp.code.includes('<body>')"
-              class="preview-iframe"
-              :html="genHtml(genApp, appStore.config)"
-              :isAiWorking="genLoading"
-            />
-            <div
-              v-else-if="genLoading"
-              class="flex flex-col justify-center items-center w-full h-full"
-            >
-              <a-spin />
-              <span class="text-tech-blue">{{ t('aiBuilding') }}</span>
-            </div>
-          </pane>
-        </splitpanes>
-      </a-spin>
+    <!-- AI build step-based UI (original logic) -->
+    <div style="height: 100%;" v-else>
+      <div v-if="currentStep === 'style'" class="style-selection-container">
+        <div class="style-selection-content">
+          <div class="style-selection-header">
+            <h3 class="mb-2 text-xl font-bold text-white">{{ t('selectAppStyle') }}</h3>
+            <p class="mb-6 text-slate-300">{{ t('styleSelectionDescription') }}</p>
+          </div>
+
+          <!-- Tab切换 -->
+          <div class="style-tabs">
+            <a-tabs v-model:activeKey="activeTab" class="style-tabs-container">
+              <a-tab-pane key="preset" :tab="t('presetStyles')">
+                <!-- 预设风格选择 -->
+                <div v-if="appStore.isLoading" class="flex justify-center items-center py-12">
+                  <a-spin size="large" />
+                  <span class="ml-3 text-slate-300">{{ t('loadingStyles') }}</span>
+                </div>
+
+                <div v-else-if="appStore.buildStyles.length > 0" class="style-grid-container">
+                  <div class="style-grid">
+                    <div
+                      v-for="style in appStore.buildStyles"
+                      :key="style.id"
+                      @click="handleChangeBuildStyle(style)"
+                      :class="[
+                        'style-card',
+                        selectedStyleId === style.id ? 'style-card-selected' : 'style-card-default',
+                      ]"
+                    >
+                      <div class="style-image-container">
+                        <img
+                          :src="style.image"
+                          :alt="style[`${appStore.config.lang}_name`]"
+                          class="style-image"
+                        />
+                        <div class="style-overlay">
+                          <div class="style-name">{{ style[`${appStore.config.lang}_name`] }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else class="py-12 text-center">
+                  <div class="mb-4 text-slate-400">
+                    <i class="text-2xl fas fa-exclamation-triangle"></i>
+                  </div>
+                  <p class="text-slate-300">{{ t('noBuildStyles') }}</p>
+                </div>
+              </a-tab-pane>
+
+              <a-tab-pane key="advanced" :disabled="!selectedStyleId">
+                <template #tab>
+                  <span class="relative">
+                    {{ t('advancedConfig') }}
+                  </span>
+                </template>
+                <!-- 高级配置 -->
+                <div class="advanced-config-container">
+                  <div class="config-section">
+                    <h4 class="config-title">{{ t('appStyle') }}</h4>
+                    <p class="config-description">{{ t('appStyleDescription') }}</p>
+                    <div class="code-editor-container">
+                      <CodeEditor
+                        :value="customStyleCode"
+                        :language="'html'"
+                        @change="customStyleCode = $event"
+                      />
+                    </div>
+                    <div class="preview-container">
+                      <h5 class="preview-title">{{ t('preview') }}</h5>
+                      <div class="preview-frame">
+                        <Preview
+                          v-if="customStyleCode"
+                          :html="customStyleCode"
+                          :isAiWorking="false"
+                          class="style-preview"
+                        />
+                        <div v-else class="preview-placeholder">
+                          <i class="mb-2 text-2xl fas fa-eye text-slate-400"></i>
+                          <span class="text-slate-400">{{ t('previewPlaceholder') }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="config-section">
+                    <h4 class="config-title">{{ t('appFunction') }}</h4>
+                    <p class="config-description">
+                      <span>{{ t('appFunctionDescription') }}</span>
+                      <!-- <a-button
+                        type="primary"
+                        class="ml-2"
+                        :loading="optimizePromptLoading"
+                        :disabled="optimizePromptLoading"
+                        @click="handleOptimizePrompt"
+                      >
+                        {{ t('optimizePrompt') }}
+                      </a-button> -->
+                    </p>
+                    <div class="code-editor-container">
+                      <a-spin :tip="t('waitingAIResponse')" :spinning="optimizePromptLoading">
+                        <CodeEditor
+                          :value="customFunctionCode"
+                          :language="'markdown'"
+                          @change="customFunctionCode = $event"
+                        />
+                      </a-spin>
+                    </div>
+                  </div>
+                </div>
+              </a-tab-pane>
+            </a-tabs>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="currentStep === 'generate'" class="editor-box">
+        <a-spin :tip="t('waitingAIResponse')" :spinning="responseLoading || appStore.isLoading">
+          <splitpanes class="default-theme">
+            <pane>
+              <CodeEditor ref="genEditorRef" :value="genApp.code" @change="$event => genApp.code = $event" />
+            </pane>
+            <pane>
+              <Preview
+                v-if="genApp.code.includes('<body>')"
+                class="preview-iframe"
+                :html="genHtml(genApp, genApp.code, appStore.config)"
+                :isAiWorking="genLoading"
+              />
+              <div
+                v-else-if="genLoading"
+                class="flex flex-col justify-center items-center w-full h-full"
+              >
+                <a-spin />
+                <span class="text-tech-blue">{{ t('aiBuilding') }}</span>
+              </div>
+            </pane>
+          </splitpanes>
+        </a-spin>
+      </div>
     </div>
   </a-modal>
 </template>
@@ -185,7 +215,7 @@ import { ref, watch, computed } from 'vue'
 import { App } from 'ant-design-vue'
 import { t } from '@/utils/i18n'
 import { showError } from '@/utils'
-import { genHtml, genPrompt } from '@/utils/genPrompt.js'
+import { genHtml, genPrompt, genLocalHtml } from '@/utils/genPrompt.js'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import Preview from '@/components/Preview/index.vue'
@@ -217,6 +247,7 @@ const activeTab = ref('preset')
 const customStyleCode = ref('')
 const customFunctionCode = ref('')
 const optimizePromptLoading = ref(false)
+const buildMode = ref('ai') // 'ai' or 'local'
 
 const appStore = useAppStore()
 
@@ -228,17 +259,23 @@ const canProceed = computed(() => {
 // 生成应用数据
 const genApp = ref(props.app)
 
+// 本地构建HTML
+const localHtml = computed(() => {
+  return genLocalHtml(genApp.value, appStore.config)
+})
+
 const handleChangeBuildStyle = (style) => {
   selectedStyleId.value = style.id
   customStyleCode.value = style.html
   customFunctionCode.value = genPrompt(genApp.value, style, appStore.config).userPrompt
 }
 
-// 监听show变化，重置步骤
+// 监听show变化，重置步骤和模式
 watch(
   () => props.show,
   async (newShow) => {
     if (newShow) {
+      buildMode.value = 'local'
       currentStep.value = 'style'
       selectedStyleId.value = ''
       activeTab.value = 'preset'
@@ -270,6 +307,14 @@ const handleCancel = () => {
   emit('update:show', false)
 }
 
+const handleStopBuilding = () => {
+  if (abortControllerRef.value) {
+    abortControllerRef.value.abort()
+  }
+  genLoading.value = false
+  responseLoading.value = false
+}
+
 const handleStyleConfirm = async () => {
   if (activeTab.value === 'preset') {
     if (!selectedStyleId.value) {
@@ -298,6 +343,20 @@ const handleSave = () => {
   }
   emit('save', genApp.value)
   emit('update:show', false)
+}
+
+const handleLocalSave = () => {
+  if (!localHtml.value) {
+    showError(t('pleaseBuildAppFirst'))
+    return
+  }
+  genApp.value.code = localHtml.value
+  emit('save', genApp.value)
+  emit('update:show', false)
+}
+
+const handleBackToStyle = () => {
+  currentStep.value = 'style'
 }
 
 // 生成应用代码的方法
@@ -543,6 +602,14 @@ const handleOptimizePrompt = () => {
   &.style-modal {
     .ant-modal {
       height: auto;
+    }
+  }
+  &.local,&.ai {
+    .ant-modal-body {
+      height: 100%;
+      .editor-box {
+        height: calc(100% - 60px);
+      }
     }
   }
   .ant-modal {

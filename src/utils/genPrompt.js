@@ -513,8 +513,7 @@ ${buildStyle.html}
 `
 }
 
-function genHtml(app, config) {
-  const { code } = app
+function genHtml(app, code, config) {
   const meta = genMeta(app)
   const appTemplate = {
     ...meta,
@@ -535,9 +534,333 @@ function genHtml(app, config) {
   return fullCode
 }
 
+// 本地生成HTML的核心渲染函数
+function renderComponent(item, meta) {
+  // 只处理常见类型，后续可扩展
+  if (item.componentName === 'form-item') {
+    const child = item.children[0]
+    const label = item.props.label
+    const id = item.id
+    const disabled = `:disabled="workflow.state.loading"`
+    switch (child.componentName) {
+      case 'textarea':
+        return `
+          <div class="mb-8">
+            <label class="block mb-2 font-medium text-textSecondary">${label}</label>
+            <textarea
+              v-model="${child.props.value}"
+              ${disabled}
+              rows="6"
+              class="px-4 py-3 w-full text-base rounded-xl text-input"
+              :placeholder="t('promptPlaceholder')"
+            ></textarea>
+          </div>
+        `
+      case 'select':
+        // 选项
+        const options = (child.props.options || []).map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')
+        return `
+          <div class="mb-6">
+            <label class="block mb-2 font-medium text-textSecondary">${label}</label>
+            <select
+              v-model="${child.props.value}"
+              ${disabled}
+              class="px-4 py-3 w-full text-base rounded-xl select-input"
+            >
+              ${options}
+            </select>
+          </div>
+        `
+      case 'input-number':
+        return `
+          <div class="mb-6">
+            <label class="block mb-2 font-medium text-textSecondary">${label}</label>
+            <input
+              type="number"
+              v-model="${child.props.value}"
+              ${disabled}
+              min="${child.props.min ?? ''}"
+              max="${child.props.max ?? ''}"
+              step="${child.props.step ?? ''}"
+              class="px-4 py-3 w-full text-base rounded-xl text-input"
+            />
+          </div>
+        `
+      case 'slider':
+        return `
+          <div class="mb-6">
+            <label class="block mb-2 font-medium text-textSecondary">${label}</label>
+            <input
+              type="range"
+              v-model="${child.props.value}"
+              ${disabled}
+              min="${child.props.min ?? ''}"
+              max="${child.props.max ?? ''}"
+              step="${child.props.step ?? ''}"
+              class="w-full"
+            />
+          </div>
+        `
+      case 'switch':
+        return `
+          <div class="flex gap-2 items-center mb-6">
+            <label class="font-medium text-textSecondary">${label}</label>
+            <input type="checkbox" v-model="${child.props.value}" ${disabled} />
+          </div>
+        `
+      case 'image-uploader':
+        return `
+          <div class="mb-6">
+            <label class="block mb-2 font-medium text-textSecondary">${label}</label>
+            <input type="file" style="display:none" :disabled="workflow.state.loading" @change="e => workflow.onUploadImageChange(e, '${id}')" :id="'upload-${id}'" />
+            <button type="button" class="px-4 py-2 rounded btn-secondary" @click="() => document.getElementById('upload-${id}').click()" :disabled="workflow.state.loading">{{ t('upload') }}</button>
+            <post-image v-if="workflow.state.inputs['${id}'].image" :src="workflow.getImageUrl(workflow.state.inputs['${id}'].image, 'input')" class="object-contain mt-2 w-full h-48" />
+            <button v-if="workflow.state.inputs['${id}'].image" type="button" class="px-2 py-1 mt-2 rounded btn-secondary" @click="() => workflow.removeImage('${id}')">{{ t('remove') }}</button>
+          </div>
+        `
+      default:
+        return ''
+    }
+  }
+  if (item.componentName === 'image-preview') {
+    const id = item.id
+    return `
+      <div class="flex overflow-hidden relative flex-1 justify-center items-center rounded-xl image-preview">
+        <post-image
+          v-if="workflow.state.outputs['${id}']"
+          :src="workflow.getImageUrl(workflow.state.outputs['${id}'], 'output')"
+          class="object-contain w-full h-full"
+        />
+        <div v-else class="p-6 text-center text-textSecondary">
+          <i class="mb-4 text-6xl opacity-30 fas fa-image"></i>
+          <p class="text-xl">{{ t('noImage') }}</p>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-4">
+        <button
+          v-if="workflow.state.outputs['${id}']"
+          @click="workflow.previewImage('${id}')"
+          class="flex-1 px-4 py-2 rounded-full btn-secondary"
+        >
+          <i class="mr-2 fas fa-expand"></i>{{ t('preview') }}
+        </button>
+        <button
+          v-if="workflow.state.outputs['${id}']"
+          @click="workflow.downloadImage('${id}')"
+          class="flex-1 px-4 py-2 rounded-full btn-primary"
+        >
+          <i class="mr-2 fas fa-download"></i>{{ t('download') }}
+        </button>
+      </div>
+    `
+  }
+  return ''
+}
+
+function genLocalHtml(app, config) {
+  const meta = genMeta(app)
+  // CDN变量
+  const VUE_CDN = CDN_URLS.VUE
+  const ARTIFY_LIB_CDN = CDN_URLS.ARTIFY_LIB
+  const ARTIFY_LIB_CSS_CDN = CDN_URLS.ARTIFY_LIB_CSS
+  const FONT_AWESOME_CDN = CDN_URLS.FONT_AWESOME
+  const TAILWIND_CDN = CDN_URLS.TAILWIND
+  // 输入区
+  const inputHtml = meta.components.children
+    .filter(item => item.componentName === 'form-item')
+    .map(item => renderComponent(item, meta))
+    .join('\n')
+  // 输出区
+  const outputHtml = meta.components.children
+    .filter(item => item.componentName === 'image-preview' || item.componentName === 'div')
+    .map(item => renderComponent(item, meta))
+    .join('\n')
+  // 按钮区
+  const buttonHtml = `
+    <div class="flex flex-wrap gap-3">
+      <button
+        @click="workflow.start"
+        :disabled="workflow.state.loading"
+        class="flex-1 min-w-[120px] px-4 py-3 rounded-full font-semibold btn-primary transition-all duration-300 flex items-center justify-center"
+      >
+        <span v-if="workflow.state.loading" class="loader"></span>
+        {{ workflow.state.loading ? t('generating') : t('generate') }}
+      </button>
+      <button
+        @click="workflow.stop"
+        :disabled="!workflow.state.loading"
+        class="px-4 py-3 font-semibold rounded-full transition-all duration-300 btn-secondary"
+      >
+        <i class="mr-2 fas fa-stop"></i>{{ t('stop') }}
+      </button>
+    </div>
+  `
+  // 进度条
+  const progressHtml = `
+    <div class="p-6 rounded-2xl shadow-xl glass-card">
+      <div class="flex justify-between mb-2">
+        <span class="font-medium text-textSecondary">{{ t('progress') }}</span>
+        <span class="font-bold text-primary">{{ workflow.state.progress }}%</span>
+      </div>
+      <div class="overflow-hidden rounded-full progress-bar">
+        <div
+          class="rounded-full progress-fill"
+          :style="{ width: workflow.state.progress + '%' }"
+        ></div>
+      </div>
+    </div>
+  `
+  // 顶部导航
+  const headerHtml = `
+    <header class="flex flex-col justify-between items-center py-6 mb-8 border-b md:flex-row border-blue-200/10">
+      <div class="flex gap-3 items-center mb-6 text-2xl font-bold md:mb-0">
+        <i class="fas fa-palette text-primary"></i>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Artify工坊</span>
+      </div>
+      <div class="flex gap-4 items-center">
+        <div class="text-sm font-medium text-textSecondary">
+          {{ t('status') }}:
+          <span class="text-primary">
+            {{ workflow.state.executing ? t('generating') : workflow.state.done ? t('completed') : t('idle') }}
+          </span> |
+          {{ t('queue') }}: {{ workflow.state.pending }}
+        </div>
+        <button
+          @click="workflow.toggleHistoryModal"
+          class="px-4 py-2 rounded-full transition-all duration-300 btn-secondary"
+        >
+          <i class="mr-2 fas fa-history"></i>{{ t('history') }}
+        </button>
+      </div>
+    </header>
+  `
+  // 主体拼接
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artify工坊 - ${meta.name}</title>
+  <script src="${VUE_CDN}"></script>
+  <script src="${ARTIFY_LIB_CDN}"></script>
+  <link rel="stylesheet" href="${ARTIFY_LIB_CSS_CDN}">
+  <link rel="stylesheet" href="${FONT_AWESOME_CDN}">
+  <script src="${TAILWIND_CDN}"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0ff',
+            secondary: '#9d4edd',
+            dark: '#0a0a14',
+            darker: '#06060d',
+            card: 'rgba(20, 20, 40, 0.7)',
+            text: '#e0e0ff',
+            textSecondary: '#a0a0c0',
+          },
+          boxShadow: {
+            'glow': '0 0 15px rgba(0, 255, 255, 0.3)',
+            'glow-hover': '0 5px 20px rgba(0, 255, 255, 0.5)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background: #06060d; background-image: radial-gradient(circle at 10% 20%, rgba(45, 9, 77, 0.3) 0%, transparent 30%), radial-gradient(circle at 90% 80%, rgba(0, 68, 77, 0.3) 0%, transparent 30%); color: #e0e0ff; min-height: 100vh; overflow-x: hidden; line-height: 1.6; }
+    .tech-element { position: absolute; z-index: -1; }
+    .circle { width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(45, 9, 77, 0.3) 0%, transparent 70%); position: fixed; top: 10%; left: 5%; }
+    .circle-2 { width: 200px; height: 200px; top: 60%; left: 85%; background: radial-gradient(circle, rgba(0, 68, 77, 0.3) 0%, transparent 70%); }
+    .grid-line { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(100, 200, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(100, 200, 255, 0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: -1; }
+    .glass-card { background: rgba(20, 20, 40, 0.7); border: 1px solid rgba(100, 200, 255, 0.1); backdrop-filter: blur(10px); }
+    .btn-primary { background: linear-gradient(90deg, #0ff, #9d4edd); color: #06060d; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0, 255, 255, 0.5); }
+    .btn-secondary { background: transparent; color: #0ff; border: 1px solid #0ff; }
+    .btn-secondary:hover { background: rgba(0, 255, 255, 0.1); }
+    .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0, 255, 255, 0.3); border-radius: 50%; border-top: 3px solid #0ff; animation: spin 1s linear infinite; margin-right: 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .progress-bar { background: rgba(10, 15, 30, 0.6); border: 1px solid rgba(100, 200, 255, 0.2); height: 1.5rem; }
+    .progress-fill { background: linear-gradient(90deg, #0ff, #9d4edd); height: 100%; transition: width 0.3s ease; }
+    .text-input { background: rgba(10, 15, 30, 0.6); border: 1px solid rgba(100, 200, 255, 0.2); color: #e0e0ff; }
+    .text-input:focus { outline: none; border-color: #0ff; box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.2); }
+    .select-input { background: rgba(10, 15, 30, 0.6); border: 1px solid rgba(100, 200, 255, 0.2); color: #e0e0ff; }
+    .select-input:focus { outline: none; border-color: #0ff; box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.2); }
+    .image-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
+    .image-preview::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, transparent 0%, rgba(0, 255, 255, 0.05) 100%); }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="tech-element circle"></div>
+    <div class="tech-element circle-2"></div>
+    <div class="tech-element grid-line"></div>
+    <div class="container px-4 py-8 mx-auto max-w-6xl">
+      ${headerHtml}
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div class="space-y-6 lg:col-span-1">
+          <div class="p-6 rounded-2xl shadow-xl glass-card">
+            <h2 class="flex gap-2 items-center mb-6 text-xl font-semibold">
+              <i class="fas fa-sliders-h text-primary"></i>
+              {{ t('modelSettings') }}
+            </h2>
+            ${inputHtml}
+            ${buttonHtml}
+          </div>
+          ${progressHtml}
+        </div>
+        <div class="lg:col-span-2">
+          <div class="p-6 h-full rounded-2xl shadow-xl glass-card">
+            <h2 class="flex gap-2 items-center mb-6 text-xl font-semibold">
+              <i class="fas fa-image text-primary"></i>
+              {{ t('result') }}
+            </h2>
+            <div class="flex flex-col h-full">
+              ${outputHtml}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <history-modal v-if="workflow.state.showHistoryModal" :workflow="workflow" />
+  </div>
+  <script>
+    const { createApp } = Vue;
+    const { HistoryModal, PostImage, useWorkflow } = window.ArtifyLib;
+    const app = createApp({
+      components: {
+        'history-modal': HistoryModal,
+        'post-image': PostImage
+      },
+      setup() {
+        const workflow = useWorkflow();
+        // 国际化翻译函数
+        const t = (key) => {
+          const translations = {
+            zh: {
+              status: '状态', generating: '生成中', completed: '完成', idle: '空闲', queue: '队列', history: '历史记录', modelSettings: '模型设置', checkpointLoader: '模型选择', prompt: '提示词', promptPlaceholder: '输入您想要生成的画面描述...', generate: '生成图像', stop: '停止', progress: '生成进度', result: '生成结果', noImage: '等待生成图像...', preview: '全屏预览', download: '下载图像', upload: '上传图片', remove: '删除图片'
+            },
+            en: {
+              status: 'Status', generating: 'Generating', completed: 'Completed', idle: 'Idle', queue: 'Queue', history: 'History', modelSettings: 'Model Settings', checkpointLoader: 'Checkpoint', prompt: 'Prompt', promptPlaceholder: 'Enter your prompt here...', generate: 'Generate Image', stop: 'Stop', progress: 'Progress', result: 'Result', noImage: 'Waiting for image generation...', preview: 'Preview', download: 'Download', upload: 'Upload Image', remove: 'Remove Image'
+            }
+          };
+          return translations[workflow.state.config.lang][key] || key;
+        };
+        return { workflow, t };
+      }
+    });
+    app.mount('#app');
+  </script>
+</body>
+</html>
+`
+}
+
 export {
   genMeta,
   genPrompt,
   genUserPromptEn,
-  genHtml
+  genHtml,
+  genLocalHtml
 }

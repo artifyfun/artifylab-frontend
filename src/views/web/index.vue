@@ -23,7 +23,7 @@ const previewProps = reactive({
 async function init() {
   await appStore.initConfig()
   const app = await appStore.getAppById(appStore.config.activeAppId)
-  const fullCode = genHtml(app, appStore.config)
+  const fullCode = genHtml(app, app.code, appStore.config)
   previewProps.html = fullCode
   previewProps.lang = appStore.config.lang
 }
