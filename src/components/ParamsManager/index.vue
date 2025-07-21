@@ -152,6 +152,7 @@ const centerOnNode = (node) => {
     eventType: 'centerOnNode',
     data: node,
   })
+  console.log(node)
   emit('postMessage', message)
 }
 
