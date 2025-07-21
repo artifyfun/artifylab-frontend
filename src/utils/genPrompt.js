@@ -613,7 +613,7 @@ function renderComponent(item, meta) {
           <div class="mb-6">
             <label class="block mb-2 font-medium text-textSecondary">${label}</label>
             <input type="file" style="display:none" :disabled="workflow.state.loading" @change="e => workflow.onUploadImageChange(e, '${id}')" :id="'upload-${id}'" />
-            <button type="button" class="px-4 py-2 rounded btn-secondary" @click="() => document.getElementById('upload-${id}').click()" :disabled="workflow.state.loading">{{ t('upload') }}</button>
+            <button type="button" class="px-4 py-2 rounded btn-secondary" @click="handleUploadImage('${id}')" :disabled="workflow.state.loading">{{ t('upload') }}</button>
             <post-image v-if="workflow.state.inputs['${id}'].image" :src="workflow.getImageUrl(workflow.state.inputs['${id}'].image, 'input')" class="object-contain mt-2 w-full h-48" />
             <button v-if="workflow.state.inputs['${id}'].image" type="button" class="px-2 py-1 mt-2 rounded btn-secondary" @click="() => workflow.removeImage('${id}')">{{ t('remove') }}</button>
           </div>
@@ -848,7 +848,10 @@ function genLocalHtml(app, config) {
           };
           return translations[workflow.state.config.lang][key] || key;
         };
-        return { workflow, t };
+        const handleUploadImage = (id) => {
+          document.getElementById(\`upload-\${id}\`).click();
+        };
+        return { workflow, t, handleUploadImage };
       }
     });
     app.mount('#app');
