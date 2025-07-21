@@ -636,7 +636,7 @@ function renderComponent(item, meta) {
           <p class="text-xl">{{ t('noImage') }}</p>
         </div>
       </div>
-      <div class="flex gap-3 mt-4">
+      <div class="flex gap-3 mt-4 image-preview-button">
         <button
           v-if="workflow.state.outputs['${id}']"
           @click="workflow.previewImage('${id}')"
@@ -789,6 +789,7 @@ function genLocalHtml(app, config) {
     .select-input:focus { outline: none; border-color: #0ff; box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.2); }
     .image-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
     .image-preview::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, transparent 0%, rgba(0, 255, 255, 0.05) 100%); }
+    .image-preview-button+.image-preview { margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -816,7 +817,7 @@ function genLocalHtml(app, config) {
               <i class="fas fa-image text-primary"></i>
               {{ t('result') }}
             </h2>
-            <div class="flex flex-col h-full">
+            <div class="flex flex-col">
               ${outputHtml}
             </div>
           </div>
