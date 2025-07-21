@@ -24,7 +24,9 @@
                 @click="activeTab = tab.key"
                 :class="[
                   'px-4 py-2 rounded-t-lg font-medium transition-all',
-                  activeTab === tab.key ? 'bg-tech-cyan/80 text-white' : 'bg-slate-700/60 text-slate-300 hover:bg-slate-600'
+                  activeTab === tab.key
+                    ? 'bg-tech-cyan/80 text-white'
+                    : 'bg-slate-700/60 text-slate-300 hover:bg-slate-600',
                 ]"
               >
                 {{ tab.label }}
@@ -44,7 +46,7 @@
                       @click="setProvider('deepseek')"
                       :class="{
                         'bg-tech-blue/80': state.config.provider === 'deepseek',
-                        'bg-slate-700/60 hover:bg-slate-600': state.config.provider !== 'deepseek'
+                        'bg-slate-700/60 hover:bg-slate-600': state.config.provider !== 'deepseek',
                       }"
                       class="flex flex-col items-center p-3 w-full rounded-lg transition-all duration-300"
                     >
@@ -55,7 +57,7 @@
                       @click="setProvider('openai')"
                       :class="{
                         'bg-tech-cyan/80': state.config.provider === 'openai',
-                        'bg-slate-700/60 hover:bg-slate-600': state.config.provider !== 'openai'
+                        'bg-slate-700/60 hover:bg-slate-600': state.config.provider !== 'openai',
                       }"
                       class="flex flex-col items-center p-3 w-full rounded-lg transition-all duration-300"
                     >
@@ -149,7 +151,7 @@
                     class="flex justify-center items-center px-4 py-2.5 mt-3 w-full text-white rounded-lg transition-all duration-300"
                     :class="{
                       'bg-gradient-to-r from-tech-blue to-tech-cyan hover:opacity-90': !isTesting,
-                      'bg-slate-600 cursor-not-allowed': isTesting
+                      'bg-slate-600 cursor-not-allowed': isTesting,
                     }"
                   >
                     <i v-if="isTesting" class="mr-2 fas fa-spinner fa-spin"></i>
@@ -158,12 +160,19 @@
                   </button>
 
                   <!-- 测试结果提示 -->
-                  <div v-if="testResult" class="p-3 mt-3 text-sm rounded-lg" :class="{
-                    'bg-green-500/20 border border-green-500/30 text-green-400': testResult.ok,
-                    'bg-red-500/20 border border-red-500/30 text-red-400': !testResult.ok
-                  }">
+                  <div
+                    v-if="testResult"
+                    class="p-3 mt-3 text-sm rounded-lg"
+                    :class="{
+                      'bg-green-500/20 border border-green-500/30 text-green-400': testResult.ok,
+                      'bg-red-500/20 border border-red-500/30 text-red-400': !testResult.ok,
+                    }"
+                  >
                     <div class="flex items-center">
-                      <i :class="testResult.ok ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'" class="mr-2"></i>
+                      <i
+                        :class="testResult.ok ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"
+                        class="mr-2"
+                      ></i>
                       <span>{{ testResult.message }}</span>
                     </div>
                     <div v-if="testResult.response" class="mt-2 text-xs opacity-80">
@@ -186,7 +195,9 @@
                       <option value="preset">{{ t('presetModels') }}</option>
                       <option value="custom">{{ t('customModel') }}</option>
                     </select>
-                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <div
+                      class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+                    >
                       <i class="fas fa-chevron-down text-slate-400"></i>
                     </div>
                   </div>
@@ -202,7 +213,9 @@
                           {{ model }}
                         </option>
                       </select>
-                      <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <div
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+                      >
                         <i class="fas fa-chevron-down text-slate-400"></i>
                       </div>
                     </div>
@@ -224,7 +237,9 @@
               <div v-if="activeTab === 'build'">
                 <div>
                   <label class="block mb-3 text-slate-300">{{ t('appStyle') }}</label>
-                  <div v-if="appStore.isLoading" class="py-4 text-slate-400">{{ t('loading') }}</div>
+                  <div v-if="appStore.isLoading" class="py-4 text-slate-400">
+                    {{ t('loading') }}
+                  </div>
                   <div v-if="appStore.buildStyles.length > 0" class="flex flex-col gap-4">
                     <button
                       v-for="style in appStore.buildStyles"
@@ -232,12 +247,21 @@
                       @click="state.config.buildStyleId = style.id"
                       :class="[
                         'flex flex-row items-center p-3 w-full rounded-lg border transition-all relative',
-                        state.config.buildStyleId === style.id ? 'border-tech-cyan bg-tech-cyan/10 text-tech-cyan' : 'border-slate-700 bg-slate-800/60 text-slate-300 hover:border-tech-cyan'
+                        state.config.buildStyleId === style.id
+                          ? 'border-tech-cyan bg-tech-cyan/10 text-tech-cyan'
+                          : 'border-slate-700 bg-slate-800/60 text-slate-300 hover:border-tech-cyan',
                       ]"
-                      style="height: 160px;"
+                      style="height: 160px"
                     >
-                      <img :src="style.image" alt="style" class="object-cover w-full h-full rounded" />
-                      <span class="absolute bottom-4 left-1/2 text-lg font-medium text-green-400 backdrop-blur-sm -translate-x-1/2 text-shadow-lg/30">{{ style[`${state.config.lang}_name`] }}</span>
+                      <img
+                        :src="style.image"
+                        alt="style"
+                        class="object-cover w-full h-full rounded"
+                      />
+                      <span
+                        class="absolute bottom-4 left-1/2 text-lg font-medium text-green-400 backdrop-blur-sm -translate-x-1/2 text-shadow-lg/30"
+                        >{{ style[`${state.config.lang}_name`] }}</span
+                      >
                     </button>
                   </div>
                   <div v-else class="py-4 text-slate-400">{{ t('noBuildStyles') }}</div>
@@ -266,24 +290,46 @@
                     @click="testNgrok"
                     :disabled="ngrokTestLoading"
                     class="flex items-center px-4 py-2.5 mt-3 mb-2 w-full text-white rounded-lg transition-all duration-300"
-                    :class="ngrokTestLoading ? 'bg-slate-600 cursor-not-allowed' : 'bg-gradient-to-r from-tech-blue to-tech-cyan hover:opacity-90'"
+                    :class="
+                      ngrokTestLoading
+                        ? 'bg-slate-600 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-tech-blue to-tech-cyan hover:opacity-90'
+                    "
                   >
                     <i v-if="ngrokTestLoading" class="mr-2 fas fa-spinner fa-spin"></i>
                     <i v-else class="mr-2 fas fa-plug"></i>
                     {{ ngrokTestLoading ? t('testingNgrok') : t('testNgrok') }}
                   </button>
-                  <div v-if="ngrokTestResult" class="p-3 text-sm rounded-lg" :class="ngrokTestResult.ok ? 'bg-green-500/20 border border-green-500/30 text-green-400' : 'bg-red-500/20 border border-red-500/30 text-red-400'">
+                  <div
+                    v-if="ngrokTestResult"
+                    class="p-3 text-sm rounded-lg"
+                    :class="
+                      ngrokTestResult.ok
+                        ? 'bg-green-500/20 border border-green-500/30 text-green-400'
+                        : 'bg-red-500/20 border border-red-500/30 text-red-400'
+                    "
+                  >
                     <div class="flex items-center">
-                      <i :class="ngrokTestResult.ok ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'" class="mr-2"></i>
+                      <i
+                        :class="
+                          ngrokTestResult.ok ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'
+                        "
+                        class="mr-2"
+                      ></i>
                       <span>{{ ngrokTestResult.message }}</span>
                     </div>
 
                     <!-- 分享按钮 - 仅在测试成功且有分享URL时显示 -->
-                    <div v-if="ngrokTestResult.ok && shareUrl" class="pt-3 mt-3 border-t border-green-500/30">
+                    <div
+                      v-if="ngrokTestResult.ok && shareUrl"
+                      class="pt-3 mt-3 border-t border-green-500/30"
+                    >
                       <div class="flex justify-between items-center">
                         <div class="flex-1 mr-3">
                           <div class="mb-1 text-xs text-green-300">{{ t('shareUrl') }}</div>
-                          <div class="text-xs text-green-400 break-all">{{ shareUrl }}</div>
+                          <div class="flex items-center text-xs text-green-400 break-all">
+                            {{ shareUrl }}
+                          </div>
                         </div>
                         <button
                           @click="copyShareUrl"
@@ -292,22 +338,54 @@
                           <i class="mr-1 fas fa-copy"></i>
                           {{ t('copyLink') }}
                         </button>
+                        <button
+                          @click="showQr = true"
+                          class="flex items-center px-2 py-2 ml-2 text-xs font-medium text-green-400 rounded-lg border transition-all duration-200 bg-green-500/20 border-green-500/40 hover:bg-green-500/30"
+                        >
+                          <i class="mr-1 fas fa-qrcode"></i>
+                        </button>
+                      </div>
+                      <!-- 二维码弹窗 -->
+                      <div
+                        v-if="showQr"
+                        class="flex fixed inset-0 justify-center items-center z-1000"
+                        @click.self="showQr = false"
+                      >
+                        <div
+                          class="relative p-4 bg-white rounded-lg shadow-lg"
+                          style="width: 220px; height: 230px"
+                        >
+                          <img
+                            :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`"
+                            alt="QR Code"
+                            class="mx-auto"
+                            style="width: 200px; height: 200px"
+                          />
+                          <button
+                            @click="showQr = false"
+                            class="absolute top-1 right-1.5 text-slate-400 hover:text-slate-700"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- 导出/导入应用功能 -->
-                  <div class="flex gap-2 mt-6">
-                    <button
-                      @click="exportApps"
-                      class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 from-tech-blue to-tech-cyan hover:opacity-90"
-                    >
-                      <i class="mr-2 fas fa-download"></i>{{ t('exportApps') }}
-                    </button>
-                    <label class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 cursor-pointer from-tech-cyan to-tech-blue hover:opacity-90">
-                      <i class="mr-2 fas fa-upload"></i>{{ t('importApps') }}
-                      <input type="file" accept=".json" class="hidden" @change="importApps" />
-                    </label>
+                    <!-- 导出/导入应用功能 -->
+                    <div class="flex gap-2 mt-6">
+                      <button
+                        @click="exportApps"
+                        class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 from-tech-blue to-tech-cyan hover:opacity-90"
+                      >
+                        <i class="mr-2 fas fa-download"></i>{{ t('exportApps') }}
+                      </button>
+                      <label
+                        class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 cursor-pointer from-tech-cyan to-tech-blue hover:opacity-90"
+                      >
+                        <i class="mr-2 fas fa-upload"></i>{{ t('importApps') }}
+                        <input type="file" accept=".json" class="hidden" @change="importApps" />
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -397,6 +475,7 @@ const showNgrokToken = ref(false)
 const isTesting = ref(false)
 const testResult = ref(null)
 const selectedModelType = ref('preset')
+const showQr = ref(false)
 
 const state = reactive({
   config: {
@@ -408,7 +487,7 @@ const state = reactive({
     max_tokens: 64000,
     temperature: 0,
     api_key: '',
-    base_url: "https://api.deepseek.com/v1",
+    base_url: 'https://api.deepseek.com/v1',
     model: 'deepseek-reasoner',
     provider: 'deepseek', // 新增供应商字段
     buildStyleId: 'tech', // 新增构建风格ID
@@ -439,11 +518,11 @@ const getModelList = () => {
 // 获取默认的Base URL
 const getDefaultBaseUrl = () => {
   if (state.config.provider === 'deepseek') {
-    return "https://api.deepseek.com/v1"
+    return 'https://api.deepseek.com/v1'
   } else if (state.config.provider === 'openai') {
-    return "https://api.openai.com/v1"
+    return 'https://api.openai.com/v1'
   }
-  return ""
+  return ''
 }
 
 // 设置供应商
@@ -479,7 +558,7 @@ const testConnection = async () => {
   if (!state.config.api_key || !state.config.base_url || !state.config.model) {
     testResult.value = {
       ok: false,
-      message: t('pleaseCompleteAllFields')
+      message: t('pleaseCompleteAllFields'),
     }
     return
   }
@@ -491,13 +570,13 @@ const testConnection = async () => {
     const response = await fetch(`${state.config.serverHost}/api/test-connection`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         api_key: state.config.api_key,
         base_url: state.config.base_url,
-        model: state.config.model
-      })
+        model: state.config.model,
+      }),
     })
 
     const result = await response.json()
@@ -506,19 +585,19 @@ const testConnection = async () => {
       testResult.value = {
         ok: true,
         message: t('connectionTestSuccessful'),
-        response: result.response
+        response: result.response,
       }
     } else {
       testResult.value = {
         ok: false,
-        message: result.message || t('connectionTestFailed')
+        message: result.message || t('connectionTestFailed'),
       }
     }
   } catch (error) {
     console.error('Test connection error:', error)
     testResult.value = {
       ok: false,
-      message: t('connectionTestError')
+      message: t('connectionTestError'),
     }
   } finally {
     isTesting.value = false
@@ -545,8 +624,8 @@ const testNgrok = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ngrokAuthtoken: state.config.ngrokAuthtoken
-      })
+        ngrokAuthtoken: state.config.ngrokAuthtoken,
+      }),
     })
     const { ok, data, message } = await res.json()
     if (ok) {
@@ -638,12 +717,8 @@ const importApps = (e) => {
       }
 
       // 验证应用数据结构
-      const validApps = appsToImport.filter(app => {
-        return app &&
-               typeof app === 'object' &&
-               app.name &&
-               app.template &&
-               app.template.prompt
+      const validApps = appsToImport.filter((app) => {
+        return app && typeof app === 'object' && app.name && app.template && app.template.prompt
       })
 
       if (validApps.length === 0) {
@@ -652,7 +727,7 @@ const importApps = (e) => {
       }
 
       // 为每个应用生成新的ID并导入
-      const appsWithNewIds = validApps.map(app => ({...app, id: uuidv4()}))
+      const appsWithNewIds = validApps.map((app) => ({ ...app, id: uuidv4() }))
       await appStore.mergeApps(appsWithNewIds)
 
       showSuccess('importSuccess', { count: validApps.length })
