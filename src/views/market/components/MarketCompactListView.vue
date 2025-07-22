@@ -170,6 +170,17 @@ const itemHeight = ref(80) // 紧凑列表项的高度
 const bufferSize = ref(5) // 缓冲区大小
 const resizeObserver = ref(null)
 
+// 动态测量第一个compact-app-item高度
+const measureItemHeight = () => {
+  nextTick(() => {
+    const item = document.querySelector('.virtual-items-container .compact-app-item')
+    if (item) {
+      // 取高度+margin-bottom（8px）
+      itemHeight.value = item.offsetHeight + 8
+    }
+  })
+}
+
 // 计算属性：过滤后的应用列表
 const filteredApps = computed(() => {
   let filtered = props.apps
@@ -211,7 +222,7 @@ const visibleRange = computed(() => {
 
 // 计算偏移量
 const offsetY = computed(() => {
-  return visibleRange.value.start * itemHeight.value
+  return Math.max(0, visibleRange.value.start * itemHeight.value)
 })
 
 // 可见的应用列表
@@ -251,6 +262,7 @@ const updateContainerHeight = () => {
   if (scrollContainer.value) {
     containerHeight.value = scrollContainer.value.clientHeight
   }
+  measureItemHeight() // 容器变化时重新测量高度
 }
 
 // 监听窗口大小变化
@@ -289,13 +301,13 @@ onMounted(() => {
   nextTick(() => {
     updateContainerHeight()
     handleResize()
-
-    // 监听窗口大小变化
     window.addEventListener('resize', handleResize)
-
-    // 使用 ResizeObserver 监听容器大小变化
+    measureItemHeight() // 初始测量高度
     if (scrollContainer.value) {
-      resizeObserver.value = new ResizeObserver(updateContainerHeight)
+      resizeObserver.value = new ResizeObserver(() => {
+        updateContainerHeight()
+        measureItemHeight() // 容器变化时重新测量高度
+      })
       resizeObserver.value.observe(scrollContainer.value)
     }
   })
@@ -319,6 +331,7 @@ onUnmounted(() => {
 .virtual-scroll-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   min-height: 0; /* 重要：确保flex子元素可以收缩 */
 }

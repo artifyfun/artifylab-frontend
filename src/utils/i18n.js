@@ -825,6 +825,7 @@ const translations = {
     dataAnalysis: 'Data Analysis',
     intelligentAssistant: 'Intelligent Assistant',
     app: 'App',
+    center: ' Center',
     missingWorkflow: 'Missing workflow, please upload workflow first',
     runWorkflow: 'Run Workflow',
     batchMode: 'Batch Mode',

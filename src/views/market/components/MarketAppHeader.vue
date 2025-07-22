@@ -43,11 +43,26 @@
           <i class="mr-2 fas fa-info-circle"></i>
           {{ t('about') }}
         </button>
+        <!-- 设置按钮 -->
+        <button
+          v-if="isElectron"
+          @click="toggleConfigModal"
+          class="px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 text-slate-300 hover:text-white hover:bg-slate-800/50"
+        >
+          <i class="mr-2 fas fa-cog"></i>
+          {{ t('settings') }}
+        </button>
       </div>
     </div>
 
     <!-- About 组件 -->
     <About v-if="showAboutModal" @clickClose="toggleAboutModal" />
+    <!-- 配置组件 -->
+    <Config
+      v-if="showConfigModal"
+      @cancel="toggleConfigModal"
+      @confirm="handleUpdateConfig"
+    />
   </header>
 </template>
 
@@ -63,10 +78,16 @@ const appStore = useAppStore()
 
 // 模态框状态
 const showAboutModal = ref(false)
+const showConfigModal = ref(false)
 
 // 切换关于模态框
 const toggleAboutModal = () => {
   showAboutModal.value = !showAboutModal.value
+}
+
+// 切换配置模态框
+const toggleConfigModal = () => {
+  showConfigModal.value = !showConfigModal.value
 }
 
 // 切换语言
@@ -75,6 +96,11 @@ const toggleLanguage = () => {
   appStore.updateConfig({ lang: newLang })
 }
 
+// 处理配置更新
+const handleUpdateConfig = async (config) => {
+  await appStore.updateConfig(config)
+  showConfigModal.value = false
+}
 </script>
 
 <style scoped>

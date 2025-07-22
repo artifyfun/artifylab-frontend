@@ -18,13 +18,23 @@
       <!-- 主内容区 -->
       <main class="relative px-4 mx-auto mt-4 max-w-7xl sm:px-6 lg:px-8">
         <!-- 标题区域 -->
-        <div class="mb-10 text-center">
+        <!-- <div class="mb-10 text-center">
           <h2 class="mb-4 text-4xl font-bold text-white tech-font md:text-5xl">
             <span class="text-tech-blue">{{ t('app') }}</span> {{ t('center') }}
           </h2>
           <p class="mx-auto max-w-2xl text-xl text-slate-300">
             {{ t('exploreFrontierAI') }}
           </p>
+        </div> -->
+        <div class="flex items-center mb-2 space-x-4">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 text-2xl text-tech-blue">
+              <i class="fas fa-home"></i>
+            </div>
+            <h1 class="text-xl font-bold text-white tech-font">
+              {{ t('app') }}{{ t('center') }}
+            </h1>
+          </div>
         </div>
 
         <!-- 操作区域 -->
@@ -47,7 +57,7 @@
         />
 
         <!-- 应用网格 -->
-        <div class="h-[calc(100vh-400px)]">
+        <div class="h-[calc(100vh-270px)]">
           <a-spin :spinning="appStore.isLoading">
             <AppGrid
               :apps="appStore.apps"
@@ -86,7 +96,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { uuidv4, showError, showSuccess, showWarning } from '@/utils'
+import { uuidv4, showError, showSuccess } from '@/utils'
 import { useAppStore } from '@/stores/appStore'
 import { useViewStore } from '@/stores/viewStore'
 import { t } from '@/utils/i18n'

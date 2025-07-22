@@ -19,11 +19,12 @@
         class="virtual-items-container"
       >
         <transition-group name="card" tag="div" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <AppCard
+          <MarketAppCard
             v-for="app in visibleApps"
             :key="app.id"
             :app="app"
             @view-detail="$emit('view-detail', $event)"
+            @install="$emit('install', $event)"
           />
         </transition-group>
       </div>
@@ -32,7 +33,7 @@
     <!-- 空状态 -->
     <div v-if="filteredApps.length === 0" class="py-20 text-center">
       <div class="inline-block p-6 mb-6 rounded-full bg-tech-darker">
-        <i class="text-5xl fas fa-robot text-tech-blue"></i>
+        <i class="text-5xl fas fa-store text-tech-blue"></i>
       </div>
       <h3 class="mb-2 text-2xl font-bold text-white">
         {{ searchQuery.trim() || selectedCategory ? t('noAppsFound') : t('noAppsAvailable') }}
@@ -42,7 +43,7 @@
           ? t('noAppsFoundWithQuery', { query: searchQuery })
           : selectedCategory
           ? t('noAppsInCategory', { category: selectedCategory })
-          : t('addFirstAppTip')
+          : t('marketEmptyDescription')
         }}
       </p>
       <div class="flex justify-center space-x-2">
@@ -68,7 +69,7 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { t } from '@/utils/i18n'
-import AppCard from './AppCard.vue'
+import MarketAppCard from './MarketAppCard.vue'
 
 const props = defineProps({
   apps: {
@@ -85,7 +86,7 @@ const props = defineProps({
   },
 })
 
-defineEmits(['view-detail', 'clear-search', 'clear-filter'])
+defineEmits(['view-detail', 'install', 'clear-search', 'clear-filter'])
 
 // 虚拟滚动相关状态
 const scrollContainer = ref(null)
@@ -99,10 +100,8 @@ const resizeObserver = ref(null)
 // 动态测量第一个卡片高度
 const measureItemHeight = () => {
   nextTick(() => {
-    // 选择第一个卡片元素
     const card = document.querySelector('.virtual-items-container .grid > *')
     if (card) {
-      // 取高度+gap（gap 取24px，按 tailwind gap-6）
       itemHeight.value = card.offsetHeight + 24
     }
   })
@@ -113,18 +112,14 @@ const filteredApps = computed(() => {
   if (!props.searchQuery.trim() && !props.selectedCategory) {
     return props.apps
   }
-
   const query = props.searchQuery.toLowerCase().trim()
   const categoryFilter = props.selectedCategory
-
   return props.apps.filter(app => {
     const nameMatch = app.name.toLowerCase().includes(query)
     const categoryMatch = app.category.toLowerCase().includes(query)
     const descriptionMatch = app.description.toLowerCase().includes(query)
-
     const matchesQuery = !query || nameMatch || categoryMatch || descriptionMatch
     const matchesCategory = categoryFilter ? app.category === categoryFilter : true
-
     return matchesQuery && matchesCategory
   })
 })
@@ -135,18 +130,14 @@ const totalHeight = computed(() => {
   return rows * itemHeight.value
 })
 
-// 计算可见范围（按行计算，避免底部抖动）
+// 计算可见范围
 const visibleRange = computed(() => {
   const total = filteredApps.value.length
-  // 计算可见行数
   const visibleRows = Math.ceil(containerHeight.value / itemHeight.value)
-  // 计算起始行，向上缓冲 bufferSize 行
   let startRow = Math.floor(scrollTop.value / itemHeight.value) - bufferSize.value
   startRow = Math.max(0, startRow)
-  // 计算结束行，向下缓冲 bufferSize 行
   let endRow = startRow + visibleRows + bufferSize.value * 2
   endRow = Math.min(Math.ceil(total / itemsPerRow.value), endRow)
-  // 转为索引
   const start = startRow * itemsPerRow.value
   const end = Math.min(total, endRow * itemsPerRow.value)
   return { start, end }
@@ -159,15 +150,7 @@ const offsetY = computed(() => {
 
 // 可见的应用列表
 const visibleApps = computed(() => {
-  const startTime = performance.now()
-  const apps = filteredApps.value.slice(visibleRange.value.start, visibleRange.value.end)
-  const endTime = performance.now()
-
-  // 添加调试信息（开发环境）
-  if (import.meta.env.DEV) {
-    console.log(`Virtual Grid: Showing ${apps.length} apps (${visibleRange.value.start}-${visibleRange.value.end}) of ${filteredApps.value.length} total in ${(endTime - startTime).toFixed(2)}ms`)
-  }
-  return apps
+  return filteredApps.value.slice(visibleRange.value.start, visibleRange.value.end)
 })
 
 // 防抖函数
@@ -188,25 +171,24 @@ const handleScroll = debounce(() => {
   if (scrollContainer.value) {
     scrollTop.value = scrollContainer.value.scrollTop
   }
-}, 16) // 约60fps
+}, 16)
 
 // 监听容器大小变化
 const updateContainerHeight = () => {
   if (scrollContainer.value) {
     containerHeight.value = scrollContainer.value.clientHeight
   }
-  measureItemHeight() // 容器变化时重新测量卡片高度
+  measureItemHeight()
 }
 
 // 监听窗口大小变化
 const handleResize = () => {
   updateContainerHeight()
-  // 根据屏幕宽度调整每行显示数量
-  if (window.innerWidth >= 1280) { // xl breakpoint
+  if (window.innerWidth >= 1280) {
     itemsPerRow.value = 4
-  } else if (window.innerWidth >= 1024) { // lg breakpoint
+  } else if (window.innerWidth >= 1024) {
     itemsPerRow.value = 3
-  } else if (window.innerWidth >= 640) { // sm breakpoint
+  } else if (window.innerWidth >= 640) {
     itemsPerRow.value = 2
   } else {
     itemsPerRow.value = 1
@@ -226,13 +208,12 @@ onMounted(() => {
     updateContainerHeight()
     handleResize()
     window.addEventListener('resize', handleResize)
-    measureItemHeight() // 初始测量卡片高度
-    // 创建 ResizeObserver 监听容器大小变化
+    measureItemHeight()
     if (scrollContainer.value && window.ResizeObserver) {
       resizeObserver.value = new ResizeObserver(() => {
         updateContainerHeight()
         handleResize()
-        measureItemHeight() // 容器变化时重新测量卡片高度
+        measureItemHeight()
       })
       resizeObserver.value.observe(scrollContainer.value)
     }
