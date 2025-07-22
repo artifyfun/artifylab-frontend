@@ -2,7 +2,7 @@ import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { ComfyUIClient } from '@artifyfun/comfy-ui-client'
-import { getQueryParam, downloadJSON, previewImageFullscreen, uuidv4, getSeed, postImage, createGlassAlert } from '@/utils'
+import { getQueryParam, downloadJSON, previewImageFullscreen, uuidv4, getSeed, postFile, createGlassAlert, getFile } from '@/utils'
 
 export default function useWorkflow() {
   const app = window.appTemplate
@@ -137,6 +137,14 @@ export default function useWorkflow() {
     return data ? `${state.config.serverHost}/view?type=${type}&filename=${data}` : null
   }
 
+  function getFileUrl(data, type) {
+    if (type === 'output') {
+      const { filename, subfolder } = data || {}
+      return filename ? `${state.config.comfyHost}/view?type=${type}&filename=${filename}&subfolder=${subfolder || ''}` : null
+    }
+    return data ? `${state.config.comfyHost}/view?type=${type}&filename=${data}` : null
+  }
+
   const getState = async () => {
     const res = await getQueueState()
     state.pending = res.queue_pending.length
@@ -169,9 +177,9 @@ export default function useWorkflow() {
     const response = {}
     Object.keys(outputs).forEach((key) => {
       if (outputKeys.includes(key)) {
-        const imageUrls =
-          outputs[key]?.images.filter((item) => item.type === 'output') || [];
-        response[key] = imageUrls.length ? imageUrls[imageUrls.length - 1] : outputs[key]
+        const imageUrls = outputs[key]?.images?.filter((item) => item.type === 'output') || []
+        const audioUrls = outputs[key]?.audio?.filter((item) => item.type === 'output') || []
+        response[key] = imageUrls.length ? imageUrls[imageUrls.length - 1] : audioUrls.length ? audioUrls[audioUrls.length - 1] : outputs[key]
       }
     })
     return response
@@ -190,7 +198,9 @@ export default function useWorkflow() {
         })
       })
       Object.keys(state.inputs).forEach((key) => {
-        Object.assign(app.template.prompt[key].inputs, state.inputs[key])
+        if (app.template.prompt[key]?.inputs && typeof app.template.prompt[key].inputs === 'object') {
+          Object.assign(app.template.prompt[key].inputs, state.inputs[key])
+        }
       })
       finishedSteps.value = 0
       const res = await getOutputs(app.template.prompt)
@@ -293,15 +303,54 @@ export default function useWorkflow() {
     }
   }
 
-  // 移除图片
+  // 处理音频上传
+  const onUploadAudioChange = async (event, id) => {
+    const file = event.target.files[0]
+    if (file) {
+      if (file.size > 100 * 1024 * 1024) {
+        alert('文件大小不能超过100MB')
+        return
+      }
+      const res = await uploadImage(file)
+      state.inputs[id].audio = res.name
+    }
+  }
+
+  // 处理视频上传
+  const onUploadVideoChange = async (event, id) => {
+    const file = event.target.files[0]
+    if (file) {
+      if (file.size > 100 * 1024 * 1024) {
+        alert('文件大小不能超过100MB')
+        return
+      }
+      const res = await uploadImage(file)
+      state.inputs[id].file = res.name
+    }
+  }
+
   const removeImage = (id) => {
     state.inputs[id].image = ''
+  }
+
+  const removeAudio = (id) => {
+    state.inputs[id].audio = ''
+  }
+
+  const removeVideo = (id) => {
+    state.inputs[id].file = ''
   }
 
   const downloadImage = (id) => {
     const data = state.outputs[id]
     const url = getImageUrl(data, 'output')
-    postImage(url, data.filename)
+    postFile(url, data.filename)
+  }
+
+  const downloadFile = (id) => {
+    const data = state.outputs[id]
+    const url = getFileUrl(data, 'output')
+    getFile(url, data.filename)
   }
 
   const previewImage = async (id) => {
@@ -354,12 +403,18 @@ export default function useWorkflow() {
   return {
     state,
     onUploadImageChange,
+    onUploadAudioChange,
+    onUploadVideoChange,
     getImageUrl,
+    getFileUrl,
     downloadImage,
+    downloadFile,
     previewImage,
     start,
     stop,
     removeImage,
+    removeAudio,
+    removeVideo,
     toggleHistoryModal,
     onHistoryItemSelect,
     removeHistory,

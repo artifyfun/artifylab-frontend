@@ -263,6 +263,10 @@ export const getRenderComponent = (node) => {
         case 'combo': {
           if (type === 'LoadImage' && selectedWidget.name === 'image') {
             return 'image-uploader'
+          } else if (type === 'LoadAudio' && selectedWidget.name === 'audio') {
+            return 'audio-uploader'
+          } else if (type === 'LoadVideo' && selectedWidget.name === 'file') {
+            return 'video-uploader'
           } else {
             return 'select'
           }
@@ -277,6 +281,12 @@ export const getRenderComponent = (node) => {
         case 'SaveImage':
         case 'Save Images Mikey': {
           return 'post-image'
+        }
+        case 'SaveAudio': {
+          return 'audio'
+        }
+        case 'SaveVideo': {
+          return 'video'
         }
         default: {
           return 'text'
@@ -521,15 +531,23 @@ export function getSeed(n) {
   return Number(num)
 }
 
-export async function postImage(url, filename) {
+export function getFile(url, filename) {
+  fetchFile({ url, filename, method: 'GET' })
+}
+
+export function postFile(url, filename) {
+  fetchFile({ url, filename, method: 'POST' })
+}
+
+export async function fetchFile({ url, filename, method }) {
   try {
     // 1. 使用fetch发送POST请求
     const response = await fetch(url, {
-      method: 'POST', // 使用POST方法
+      method,
       headers: {
         'Content-Type': 'application/json' // 根据实际API调整
       },
-      body: JSON.stringify({}) // 如果API需要参数，在此处添加
+      body: method === 'POST' ? JSON.stringify({}) : undefined // 如果API需要参数，在此处添加
     });
 
     // 2. 检查请求是否成功
@@ -662,7 +680,7 @@ export function createGlassAlert(message, title = '提示') {
   `;
 
   const confirmBtn = document.createElement('button');
-  confirmBtn.textContent = '确认';
+  confirmBtn.textContent = 'Ok';
   confirmBtn.style.cssText = `
       background: linear-gradient(to right, #0ea5e9, #6366f1);
       color: white;

@@ -138,6 +138,44 @@ const genMeta = (app) => {
                   },
                 ],
               })
+            } else if (type === 'LoadAudio' && selectedWidget.name === 'audio') {
+              nodes.push({
+                id: node.id,
+                componentName: 'form-item',
+                props: {
+                  label,
+                  key,
+                  title
+                },
+                children: [
+                  {
+                    componentName: 'audio-uploader',
+                    props: {
+                      value: `workflow.getImageUrl(${inputValue}, 'input')`,
+                      onChange: `(e) => workflow.onUploadAudioChange(e, '${node.id}')`,
+                    },
+                  },
+                ],
+              })
+            } else if (type === 'LoadVideo' && selectedWidget.name === 'file') {
+              nodes.push({
+                id: node.id,
+                componentName: 'form-item',
+                props: {
+                  label,
+                  key,
+                  title
+                },
+                children: [
+                  {
+                    componentName: 'video-uploader',
+                    props: {
+                      value: `workflow.getImageUrl(${inputValue}, 'input')`,
+                      onChange: `(e) => workflow.onUploadVideoChange(e, '${node.id}')`,
+                    },
+                  },
+                ],
+              })
             } else {
               nodes.push({
                 id: node.id,
@@ -206,6 +244,46 @@ const genMeta = (app) => {
               children: [
                 {
                   componentName: 'post-image',
+                  props: {
+                    src: `workflow.getImageUrl(workflow.state.outputs['${node.id}'], 'output')`,
+                  },
+                },
+              ],
+            })
+            break
+          }
+          case 'SaveAudio': {
+            nodes.push({
+              id: node.id,
+              componentName: 'audio-preview',
+              props: {
+                label,
+                key,
+                title
+              },
+              children: [
+                {
+                  componentName: 'audio',
+                  props: {
+                    src: `workflow.getImageUrl(workflow.state.outputs['${node.id}'], 'output')`,
+                  },
+                },
+              ],
+            })
+            break
+          }
+          case 'SaveVideo': {
+            nodes.push({
+              id: node.id,
+              componentName: 'video-preview',
+              props: {
+                label,
+                key,
+                title
+              },
+              children: [
+                {
+                  componentName: 'video',
                   props: {
                     src: `workflow.getImageUrl(workflow.state.outputs['${node.id}'], 'output')`,
                   },
@@ -384,6 +462,10 @@ ${JSON.stringify(meta.state, null, 2)}
       let prompt = ''
       if (item.children[0].componentName === 'image-uploader') {
         prompt = `图片上传：标签为"${item.props.label}"，原生组件为input type="file"，样式一定要display: none，@change绑定e => workflow.onUploadImageChange(e, '${item.id}')，展示的图片使用vue组件<post-image src="${item.children[0].props.value}"></post-image>，删除图片调用workflow.removeImage('${item.id}')`
+      } else if (item.children[0].componentName === 'audio-uploader') {
+        prompt = `音频上传：标签为"${item.props.label}"，原生组件为input type="file"，样式一定要display: none，@change绑定e => workflow.onUploadAudioChange(e, '${item.id}')，展示的音频使用原生组件<audio src="${item.children[0].props.value}" style="height: 40px;" controls="controls" loop="loop"></audio>，删除音频调用workflow.removeAudio('${item.id}')`
+      } else if (item.children[0].componentName === 'video-uploader') {
+        prompt = `视频上传：标签为"${item.props.label}"，原生组件为input type="file"，样式一定要display: none，@change绑定e => workflow.onUploadVideoChange(e, '${item.id}')，展示的视频使用原生组件<video src="${item.children[0].props.value}" controls="controls" loop="loop"></video>，删除视频调用workflow.removeVideo('${item.id}')`
       } else {
         prompt = `输入项：标签为"${item.props.label}"，原生组件为${item.children[0].componentName},属性为${JSON.stringify(item.children[0].props)}${item.children[0].props.value ? `，值绑定到${item.children[0].props.value}` : ''}`
       }
@@ -392,6 +474,12 @@ ${JSON.stringify(meta.state, null, 2)}
     }
     if (item.componentName === 'image-preview') {
       return `图片预览：标签为"${item.props.label}"，vue组件为${item.children[0].componentName}(和原生img用法一样，标签需要使用小写才能识别),属性为${JSON.stringify(item.children[0].props)},图片绑定到${item.children[0].props.src}，可全屏查看(直接调用workflow.previewImage('${item.id}'))，可下载(直接调用workflow.downloadImage('${item.id}'))`
+    }
+    if (item.componentName === 'audio-preview') {
+      return `音频预览：标签为"${item.props.label}"，展示的音频使用原生组件<audio src="${item.children[0].props.src}" style="height: 40px;" controls="controls" loop="loop"></audio>，可下载(直接调用workflow.downloadFile('${item.id}'))`
+    }
+    if (item.componentName === 'video-preview') {
+      return `视频预览：标签为"${item.props.label}"，展示的视频使用原生组件<video src="${item.children[0].props.src}" controls="controls" loop="loop"></video>，可下载(直接调用workflow.downloadFile('${item.id}'))`
     }
     if (item.componentName === 'div') {
       return `结果预览：标签为"${item.props.label}"，原生组件为${item.children[0].componentName},属性为${JSON.stringify(item.children[0].props)}${item.children[0].props.value ? `，值绑定到${item.children[0].props.value}` : ''}`
@@ -479,6 +567,10 @@ The following page elements need to be implemented:
       let prompt = ''
       if (item.children[0].componentName === 'image-uploader') {
         prompt = `Image upload: label is "${item.props.label}", native component is input type="file", style must be display: none, @change binding e => workflow.onUploadImageChange(e, '${item.id}'), display image using vue component <post-image src="${item.children[0].props.value}"></post-image>, delete image by calling workflow.removeImage('${item.id}')`
+      } else if (item.children[0].componentName === 'audio-uploader') {
+        prompt = `Audio upload: label is "${item.props.label}", native component is input type="file", style must be display: none, @change binding e => workflow.onUploadAudioChange(e, '${item.id}'), display audio using native component <audio src="${item.children[0].props.value}" style="height: 40px;" controls="controls" loop="loop"></audio>, delete audio by calling workflow.removeAudio('${item.id}')`
+      } else if (item.children[0].componentName === 'video-uploader') {
+        prompt = `Video upload: label is "${item.props.label}", native component is input type="file", style must be display: none, @change binding e => workflow.onUploadVideoChange(e, '${item.id}'), display video using native component <video src="${item.children[0].props.value}" controls="controls" loop="loop"></video>, delete video by calling workflow.removeVideo('${item.id}')`
       } else {
         prompt = `Input field: label is "${item.props.label}", native component is ${item.children[0].componentName}, properties are ${JSON.stringify(item.children[0].props)}${item.children[0].props.value ? `, value bound to ${item.children[0].props.value}` : ''}`
       }
@@ -487,6 +579,12 @@ The following page elements need to be implemented:
     }
     if (item.componentName === 'image-preview') {
       return `Image preview: label is "${item.props.label}", vue component is ${item.children[0].componentName} (same usage as native img, tag must be lowercase to be recognized), properties are ${JSON.stringify(item.children[0].props)}, image bound to ${item.children[0].props.src}, can view fullscreen (directly call workflow.previewImage('${item.id}')), can download (directly call workflow.downloadImage('${item.id}'))`
+    }
+    if (item.componentName === 'audio-preview') {
+      return `Audio preview: label is "${item.props.label}", display audio using native component <audio src="${item.children[0].props.src}" style="height: 40px;" controls="controls" loop="loop"></audio>, can download (directly call workflow.downloadFile('${item.id}'))`
+    }
+    if (item.componentName === 'video-preview') {
+      return `Video preview: label is "${item.props.label}", display video using native component <video src="${item.children[0].props.src}" controls="controls" loop="loop"></video>, can download (directly call workflow.downloadFile('${item.id}'))`
     }
     if (item.componentName === 'div') {
       return `Result preview: label is "${item.props.label}", native component is ${item.children[0].componentName}, properties are ${JSON.stringify(item.children[0].props)}${item.children[0].props.value ? `, value bound to ${item.children[0].props.value}` : ''}`
@@ -613,9 +711,29 @@ function renderComponent(item, meta) {
           <div class="mb-6">
             <label class="block mb-2 font-medium text-textSecondary">${label}</label>
             <input type="file" style="display:none" :disabled="workflow.state.loading" @change="e => workflow.onUploadImageChange(e, '${id}')" :id="'upload-${id}'" />
-            <button type="button" class="px-4 py-2 rounded btn-secondary" @click="handleUploadImage('${id}')" :disabled="workflow.state.loading">{{ t('upload') }}</button>
-            <post-image v-if="workflow.state.inputs['${id}'].image" :src="workflow.getImageUrl(workflow.state.inputs['${id}'].image, 'input')" class="object-contain mt-2 w-full h-48" />
-            <button v-if="workflow.state.inputs['${id}'].image" type="button" class="px-2 py-1 mt-2 rounded btn-secondary" @click="() => workflow.removeImage('${id}')">{{ t('remove') }}</button>
+            <button type="button" class="px-4 py-2 rounded btn-secondary" @click="handleUploadFile('${id}')" :disabled="workflow.state.loading">{{ t('upload') }}</button>
+            <button v-if="workflow.state.inputs['${id}'].image" type="button" class="px-4 py-2 ml-2 rounded btn-danger" @click="() => workflow.removeImage('${id}')">{{ t('remove') }}</button>
+            <post-image v-if="workflow.state.inputs['${id}'].image" :src="workflow.getImageUrl(workflow.state.inputs['${id}'].image, 'input')" class="object-contain mt-2 w-full h-48"></post-image>
+          </div>
+        `
+      case 'audio-uploader':
+        return `
+          <div class="mb-6">
+            <label class="block mb-2 font-medium text-textSecondary">${label}</label>
+            <input type="file" style="display:none" :disabled="workflow.state.loading" @change="e => workflow.onUploadAudioChange(e, '${id}')" :id="'upload-${id}'" />
+            <button type="button" class="px-4 py-2 rounded btn-secondary" @click="handleUploadFile('${id}')" :disabled="workflow.state.loading">{{ t('uploadAudio') }}</button>
+            <button v-if="workflow.state.inputs['${id}'].audio" type="button" class="px-4 py-2 ml-2 rounded btn-danger" @click="() => workflow.removeAudio('${id}')">{{ t('removeAudio') }}</button>
+            <audio v-if="workflow.state.inputs['${id}'].audio" :src="workflow.getFileUrl(workflow.state.inputs['${id}'].audio, 'input')" class="mt-2 w-full" style="height: 40px;" controls="controls" loop="loop"></audio>
+          </div>
+        `
+      case 'video-uploader':
+        return `
+          <div class="mb-6">
+            <label class="block mb-2 font-medium text-textSecondary">${label}</label>
+            <input type="file" style="display:none" :disabled="workflow.state.loading" @change="e => workflow.onUploadVideoChange(e, '${id}')" :id="'upload-${id}'" />
+            <button type="button" class="px-4 py-2 rounded btn-secondary" @click="handleUploadFile('${id}')" :disabled="workflow.state.loading">{{ t('uploadVideo') }}</button>
+            <button v-if="workflow.state.inputs['${id}'].file" type="button" class="px-4 py-2 ml-2 rounded btn-danger" @click="() => workflow.removeVideo('${id}')">{{ t('removeVideo') }}</button>
+            <video v-if="workflow.state.inputs['${id}'].file" :src="workflow.getFileUrl(workflow.state.inputs['${id}'].file, 'input')" class="mt-2 w-full h-48" controls="controls" loop="loop"></video>
           </div>
         `
       default:
@@ -654,6 +772,61 @@ function renderComponent(item, meta) {
       </div>
     `
   }
+  if (item.componentName === 'audio-preview') {
+    const id = item.id
+    return `
+      <div class="overflow-hidden relative flex-1 rounded-xl audio-preview">
+        <audio
+          v-if="workflow.state.outputs['${id}']"
+          :src="workflow.getFileUrl(workflow.state.outputs['${id}'], 'output')"
+          controls="controls"
+          loop="loop"
+          class="mt-2 w-full"
+          style="height: 40px;"
+        ></audio>
+        <div v-else class="p-6 text-center text-textSecondary">
+          <i class="mb-4 text-6xl opacity-30 fas fa-audio"></i>
+          <p class="text-xl">{{ t('noAudio') }}</p>
+        </div>
+        <div class="flex gap-3 mt-4 image-preview-button">
+          <button
+            v-if="workflow.state.outputs['${id}']"
+            @click="workflow.downloadFile('${id}')"
+            class="flex-1 px-4 py-2 rounded-full btn-primary"
+          >
+            <i class="mr-2 fas fa-download"></i>{{ t('download') }}
+          </button>
+        </div>
+      </div>
+    `
+  }
+  if (item.componentName === 'video-preview') {
+    const id = item.id
+    return `
+      <div class="overflow-hidden relative flex-1 rounded-xl video-preview">
+        <video
+          v-if="workflow.state.outputs['${id}']"
+          :src="workflow.getFileUrl(workflow.state.outputs['${id}'], 'output')"
+          controls="controls"
+          loop="loop"
+          class="mt-2 w-full h-full"
+        ></video>
+        <div v-else class="p-6 text-center text-textSecondary">
+          <i class="mb-4 text-6xl opacity-30 fas fa-video"></i>
+          <p class="text-xl">{{ t('noVideo') }}</p>
+        </div>
+        <div class="flex gap-3 mt-4 image-preview-button">
+          <button
+            v-if="workflow.state.outputs['${id}']"
+            @click="workflow.downloadFile('${id}')"
+            class="flex-1 px-4 py-2 rounded-full btn-primary"
+          >
+            <i class="mr-2 fas fa-download"></i>{{ t('download') }}
+          </button>
+        </div>
+      </div>
+    `
+  }
   return ''
 }
 
@@ -672,7 +845,7 @@ function genLocalHtml(app, config) {
     .join('\n')
   // 输出区
   const outputHtml = meta.components.children
-    .filter(item => item.componentName === 'image-preview' || item.componentName === 'div')
+    .filter(item => ['image-preview', 'audio-preview', 'video-preview', 'div'].includes(item.componentName))
     .map(item => renderComponent(item, meta))
     .join('\n')
   // 按钮区
@@ -779,6 +952,8 @@ function genLocalHtml(app, config) {
     .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0, 255, 255, 0.5); }
     .btn-secondary { background: transparent; color: #0ff; border: 1px solid #0ff; }
     .btn-secondary:hover { background: rgba(0, 255, 255, 0.1); }
+    .btn-danger { background: transparent; color: #ff0000; border: 1px solid #ff0000; }
+    .btn-danger:hover { background: rgba(255, 0, 0, 0.1); }
     .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0, 255, 255, 0.3); border-radius: 50%; border-top: 3px solid #0ff; animation: spin 1s linear infinite; margin-right: 10px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .progress-bar { background: rgba(10, 15, 30, 0.6); border: 1px solid rgba(100, 200, 255, 0.2); height: 1.5rem; }
@@ -790,6 +965,8 @@ function genLocalHtml(app, config) {
     .image-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
     .image-preview::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, transparent 0%, rgba(0, 255, 255, 0.05) 100%); }
     .image-preview-button+.image-preview { margin-top: 1rem; }
+    .audio-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
+    .video-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
   </style>
 </head>
 <body>
@@ -840,18 +1017,66 @@ function genLocalHtml(app, config) {
         const t = (key) => {
           const translations = {
             zh: {
-              status: '状态', generating: '生成中', completed: '完成', idle: '空闲', queue: '队列', history: '历史记录', modelSettings: '模型设置', checkpointLoader: '模型选择', prompt: '提示词', promptPlaceholder: '输入您想要生成的画面描述...', generate: '生成图像', stop: '停止', progress: '生成进度', result: '生成结果', noImage: '等待生成图像...', preview: '全屏预览', download: '下载图像', upload: '上传图片', remove: '删除图片'
+              status: '状态',
+              generating: '生成中',
+              completed: '完成',
+              idle: '空闲',
+              queue: '队列',
+              history: '历史记录',
+              modelSettings: '模型设置',
+              checkpointLoader: '模型选择',
+              prompt: '提示词',
+              promptPlaceholder: '输入您想要生成的画面描述...',
+              generate: '生成图像',
+              stop: '停止',
+              progress: '生成进度',
+              result: '生成结果',
+              noImage: '等待生成图像...',
+              preview: '全屏预览',
+              download: '下载',
+              upload: '上传图片',
+              remove: '删除图片',
+              noAudio: '等待生成音频...',
+              noVideo: '等待生成视频...',
+              uploadAudio: '上传音频',
+              uploadVideo: '上传视频',
+              removeAudio: '删除音频',
+              removeVideo: '删除视频'
             },
             en: {
-              status: 'Status', generating: 'Generating', completed: 'Completed', idle: 'Idle', queue: 'Queue', history: 'History', modelSettings: 'Model Settings', checkpointLoader: 'Checkpoint', prompt: 'Prompt', promptPlaceholder: 'Enter your prompt here...', generate: 'Generate Image', stop: 'Stop', progress: 'Progress', result: 'Result', noImage: 'Waiting for image generation...', preview: 'Preview', download: 'Download', upload: 'Upload Image', remove: 'Remove Image'
+              status: 'Status',
+              generating: 'Generating',
+              completed: 'Completed',
+              idle: 'Idle',
+              queue: 'Queue',
+              history: 'History',
+              modelSettings: 'Model Settings',
+              checkpointLoader: 'Checkpoint',
+              prompt: 'Prompt',
+              promptPlaceholder: 'Enter your prompt here...',
+              generate: 'Generate Image',
+              stop: 'Stop',
+              progress: 'Progress',
+              result: 'Result',
+              noImage: 'Waiting for image generation...',
+              preview: 'Preview',
+              download: 'Download',
+              upload: 'Upload Image',
+              remove: 'Remove Image',
+              noAudio: 'Waiting for audio generation...',
+              noVideo: 'Waiting for video generation...',
+              uploadAudio: 'Upload Audio',
+              uploadVideo: 'Upload Video',
+              removeAudio: 'Remove Audio',
+              removeVideo: 'Remove Video'
             }
           };
           return translations[workflow.state.config.lang][key] || key;
         };
-        const handleUploadImage = (id) => {
+        const handleUploadFile = (id) => {
           document.getElementById(\`upload-\${id}\`).click();
         };
-        return { workflow, t, handleUploadImage };
+        return { workflow, t, handleUploadFile };
       }
     });
     app.mount('#app');
