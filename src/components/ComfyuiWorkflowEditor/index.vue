@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 
 import ComfyuiPlayground from '../ComfyuiPlayground/index.vue'
 import ParamsManager from '../ParamsManager/index.vue'
@@ -54,6 +54,15 @@ const getData = async () => {
     workflow: props.template.workflow
   }
 }
+
+// 监听 props.template 变化，自动同步 paramsNodes
+watch(
+  () => props.template,
+  (newTemplate) => {
+    editorState.paramsNodes = newTemplate.paramsNodes
+  },
+  { deep: true }
+)
 
 onMounted(() => {
   editorState.loading = true

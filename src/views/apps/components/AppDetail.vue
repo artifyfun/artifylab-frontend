@@ -11,15 +11,15 @@
       <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
         <div>
           <div class="overflow-hidden h-72 rounded-lg">
-            <img :src="app.imageUrl" :alt="app.name" class="object-cover w-full h-full" />
+            <img :src="currentApp.imageUrl" :alt="currentApp.name" class="object-cover w-full h-full" />
           </div>
 
           <div class="flex flex-wrap gap-2 mt-4">
             <span class="px-3 py-1 text-sm rounded-full bg-tech-blue/20 text-tech-blue">
-              <i class="mr-1 fas fa-microchip"></i> {{ t(app.category) }}
+              <i class="mr-1 fas fa-microchip"></i> {{ t(currentApp.category) }}
             </span>
             <span class="px-3 py-1 text-sm rounded-full bg-tech-purple/20 text-tech-purple">
-              <i class="mr-1 fas fa-bolt"></i> {{ t(app.powerLevel) }}
+              <i class="mr-1 fas fa-bolt"></i> {{ t(currentApp.powerLevel) }}
             </span>
           </div>
         </div>
@@ -27,10 +27,10 @@
         <div class="flex flex-col">
           <div class="flex-1">
             <div class="flex items-center mb-2">
-              <h3 class="text-2xl font-bold text-white">{{ app.name }}</h3>
+              <h3 class="text-2xl font-bold text-white">{{ currentApp.name }}</h3>
               <!-- 市场安装标记 -->
               <div
-                v-if="app.isFromMarket"
+                v-if="currentApp.isFromMarket"
                 class="px-2 py-1 ml-3 text-xs font-medium text-white bg-gradient-to-r rounded from-tech-green to-tech-cyan"
               >
                 <i class="mr-1 fas fa-store"></i>
@@ -41,7 +41,7 @@
             <div class="flex justify-between items-center mb-4 text-sm text-slate-400">
               <div>
                 <i class="mr-2 far fa-clock"></i>
-                <span>{{ t('createdOn', { date: formatDate(app.createdAt) }) }}</span>
+                <span>{{ t('createdOn', { date: formatDate(currentApp.createdAt) }) }}</span>
               </div>
               <div class="flex justify-end items-center" v-if="isElectron">
                 <a-tooltip>
@@ -66,7 +66,7 @@
             </div>
 
             <p class="mb-6 text-slate-300">
-              {{ app.description }}
+              {{ currentApp.description }}
             </p>
           </div>
           <div class="flex gap-2 justify-end">
@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { App } from 'ant-design-vue'
 import { t } from '@/utils/i18n'
 import { showInfo } from '@/utils'
@@ -136,6 +136,15 @@ const genModalRef = ref(null)
 
 // 内部状态
 const currentApp = ref(props.app)
+
+// 监听 props.app 变化，自动同步 currentApp
+watch(
+  () => props.app,
+  (newApp) => {
+    currentApp.value = JSON.parse(JSON.stringify(newApp))
+  },
+  { deep: true, immediate: true }
+)
 
 // 处理关闭
 const handleClose = () => {

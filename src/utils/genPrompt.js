@@ -713,7 +713,7 @@ function renderComponent(item, meta) {
             <input type="file" style="display:none" :disabled="workflow.state.loading" @change="e => workflow.onUploadImageChange(e, '${id}')" :id="'upload-${id}'" />
             <button type="button" class="px-4 py-2 rounded btn-secondary" @click="handleUploadFile('${id}')" :disabled="workflow.state.loading">{{ t('upload') }}</button>
             <button v-if="workflow.state.inputs['${id}'].image" type="button" class="px-4 py-2 ml-2 rounded btn-danger" @click="() => workflow.removeImage('${id}')">{{ t('remove') }}</button>
-            <post-image v-if="workflow.state.inputs['${id}'].image" :src="workflow.getImageUrl(workflow.state.inputs['${id}'].image, 'input')" class="object-contain mt-2 w-full h-48"></post-image>
+            <post-image v-if="workflow.state.inputs['${id}'].image" :src="workflow.getImageUrl(workflow.state.inputs['${id}'].image, 'input')" class="object-contain mt-2 w-full"></post-image>
           </div>
         `
       case 'audio-uploader':
