@@ -15,8 +15,7 @@
       <!-- 市场安装标记 -->
       <div v-if="app.isFromMarket" class="absolute top-3 left-3 z-20">
         <div class="flex items-center px-2 py-1 text-xs font-medium text-white bg-gradient-to-r rounded from-tech-green to-tech-cyan">
-          <i class="mr-1 fas fa-store"></i>
-          {{ t('fromMarket') }}
+          <i class="fas fa-store"></i>
         </div>
       </div>
 

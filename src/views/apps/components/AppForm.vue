@@ -6,14 +6,6 @@
           <h3 class="text-xl font-bold text-white">
             {{ currentApp.id ? t('editApp') : t('addNewAppTitle') }}
           </h3>
-          <!-- 市场应用提示 -->
-          <div
-            v-if="currentApp.isFromMarket"
-            class="flex items-center mt-1 text-sm text-tech-green"
-          >
-            <i class="mr-1 fas fa-store"></i>
-            {{ t('fromMarket') }}
-          </div>
         </div>
         <button @click="handleClose" class="text-slate-400 hover:text-white">
           <i class="fas fa-times"></i>

@@ -188,9 +188,9 @@ const translations = {
     deleteHistoryConfirm: '确定要删除搜索历史"{history}"吗？',
 
     // 参数管理
-    paramName: '参数名称',
+    paramName: '变量名称',
     alias: '别名',
-    paramType: '参数类型',
+    paramType: '变量类型',
     belongingNode: '所属节点',
     operation: '操作',
     renderComponent: '渲染组件',
@@ -209,7 +209,7 @@ const translations = {
     text: '文本',
     input: '输入',
     output: '输出',
-    pleaseAddParams: '请右键节点提取参数',
+    pleaseAddParams: '请右键节点提取变量',
 
     // 应用市场
     market: '应用市场',
@@ -706,9 +706,9 @@ const translations = {
     deleteHistoryConfirm: 'Are you sure you want to delete search history "{history}"?',
 
     // 参数管理
-    paramName: 'Parameter Name',
+    paramName: 'Variable Name',
     alias: 'Alias',
-    paramType: 'Parameter Type',
+    paramType: 'Variable Type',
     belongingNode: 'Belonging Node',
     operation: 'Operation',
     renderComponent: 'Render Component',
@@ -727,7 +727,7 @@ const translations = {
     text: 'Text',
     input: 'Input',
     output: 'Output',
-    pleaseAddParams: 'Please right-click the node to pick parameters',
+    pleaseAddParams: 'Please right-click the node to pick variables',
 
     // 应用市场
     market: 'App Market',

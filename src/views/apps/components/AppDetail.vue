@@ -28,14 +28,6 @@
           <div class="flex-1">
             <div class="flex items-center mb-2">
               <h3 class="text-2xl font-bold text-white">{{ currentApp.name }}</h3>
-              <!-- 市场安装标记 -->
-              <div
-                v-if="currentApp.isFromMarket"
-                class="px-2 py-1 ml-3 text-xs font-medium text-white bg-gradient-to-r rounded from-tech-green to-tech-cyan"
-              >
-                <i class="mr-1 fas fa-store"></i>
-                {{ t('fromMarket') }}
-              </div>
             </div>
 
             <div class="flex justify-between items-center mb-4 text-sm text-slate-400">

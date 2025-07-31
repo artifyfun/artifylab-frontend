@@ -6,14 +6,6 @@
     <!-- 卡片光效 -->
     <div class="card-glow"></div>
 
-    <!-- 市场标志 -->
-    <div class="absolute top-3 left-3 z-20">
-      <div class="flex items-center px-2 py-1 text-xs font-medium text-white bg-gradient-to-r rounded from-tech-green to-tech-cyan">
-        <i class="mr-1 fas fa-store"></i>
-        {{ t('market') }}
-      </div>
-    </div>
-
     <!-- 封面图片 -->
     <div class="overflow-hidden relative mb-4 h-48 rounded-lg app-imageUrl">
       <div
