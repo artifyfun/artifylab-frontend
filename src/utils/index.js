@@ -173,6 +173,7 @@ export function getQueryParam(key) {
 // 应用分类枚举
 export const APP_CATEGORIES = {
   IMAGE_GENERATION: 'imageGeneration',
+  VIDEO_GENERATION: 'videoGeneration',
   TEXT_PROCESSING: 'textProcessing',
   SPEECH_RECOGNITION: 'speechRecognition',
   DATA_ANALYSIS: 'dataAnalysis',

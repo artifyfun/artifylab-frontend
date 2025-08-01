@@ -66,6 +66,7 @@
             class="px-4 py-2.5 w-full text-white rounded-lg tech-input focus:outline-none"
           >
             <option value="imageGeneration">{{ t('imageGeneration') }}</option>
+            <option value="videoGeneration">{{ t('videoGeneration') }}</option>
             <option value="textProcessing">{{ t('textProcessing') }}</option>
             <option value="speechRecognition">{{ t('speechRecognition') }}</option>
             <option value="dataAnalysis">{{ t('dataAnalysis') }}</option>
