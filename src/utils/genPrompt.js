@@ -272,7 +272,8 @@ const genMeta = (app) => {
             })
             break
           }
-          case 'SaveVideo': {
+          case 'SaveVideo':
+          case 'VHS_VideoCombine': {
             nodes.push({
               id: node.id,
               componentName: 'video-preview',
