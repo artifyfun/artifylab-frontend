@@ -827,6 +827,18 @@ function renderComponent(item, meta) {
       </div>
     `
   }
+  if (item.componentName === 'div') {
+    const id = item.id
+    return `
+      <div class="overflow-auto relative flex-1 rounded-xl text-preview">
+        <p v-if="workflow.state.outputs['${id}']" class="mt-2 w-full h-full text-textSecondary">{{ workflow.state.outputs['${id}'] }}</p>
+        <div v-else class="p-6 text-center text-textSecondary">
+          <i class="mb-4 text-6xl opacity-30 fas fa-text"></i>
+          <p class="text-xl">{{ t('noData') }}</p>
+        </div>
+      </div>
+    `
+  }
   return ''
 }
 
@@ -965,8 +977,8 @@ function genLocalHtml(app, config) {
     .image-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
     .image-preview::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, transparent 0%, rgba(0, 255, 255, 0.05) 100%); }
     .image-preview-button+.image-preview { margin-top: 1rem; }
-    .audio-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
-    .video-preview { background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
+    .audio-preview { margin-top: 10px; background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
+    .video-preview { margin-top: 10px; background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460); position: relative; }
   </style>
 </head>
 <body>
@@ -1041,7 +1053,8 @@ function genLocalHtml(app, config) {
               uploadAudio: '上传音频',
               uploadVideo: '上传视频',
               removeAudio: '删除音频',
-              removeVideo: '删除视频'
+              removeVideo: '删除视频',
+              noData: '暂无数据'
             },
             en: {
               status: 'Status',
@@ -1068,7 +1081,8 @@ function genLocalHtml(app, config) {
               uploadAudio: 'Upload Audio',
               uploadVideo: 'Upload Video',
               removeAudio: 'Remove Audio',
-              removeVideo: 'Remove Video'
+              removeVideo: 'Remove Video',
+              noData: 'No Data'
             }
           };
           return translations[workflow.state.config.lang][key] || key;

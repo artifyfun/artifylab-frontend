@@ -177,9 +177,15 @@ export default function useWorkflow() {
     const response = {}
     Object.keys(outputs).forEach((key) => {
       if (outputKeys.includes(key)) {
-        const imageUrls = outputs[key]?.images?.filter((item) => item.type === 'output') || []
-        const audioUrls = outputs[key]?.audio?.filter((item) => item.type === 'output') || []
-        response[key] = imageUrls.length ? imageUrls[imageUrls.length - 1] : audioUrls.length ? audioUrls[audioUrls.length - 1] : outputs[key]
+        Object.values(outputs[key]).forEach(item => {
+          if (Array.isArray(item)) {
+            const outputItem = item.find((item) => typeof item === 'object' && item.type === 'output')
+            if (outputItem) {
+              response[key] = outputItem
+            }
+          }
+        })
+        response[key] = response[key] || Object.values(outputs[key]).find((item) => Array.isArray(item))?.join('\n')
       }
     })
     return response
