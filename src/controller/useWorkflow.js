@@ -50,7 +50,6 @@ export default function useWorkflow() {
     if (type === 'message') {
       const message = JSON.parse(data.toString())
       if (message.type === 'execution_start') {
-        finishedSteps.value = 0
         state.promptId = message.data.prompt_id
       }
       if (message.type === 'execution_cached') {
@@ -82,7 +81,23 @@ export default function useWorkflow() {
           finishedSteps.value += 1
         } else if (Object.keys(app.template.prompt).includes(message.data.node) && app.template.prompt[message.data.node]?.inputs?.steps && finishedSteps.value < totalSteps.value) {
           finishedSteps.value += 1
+        } else if (!addIds.value.includes(message.data.node)) {
+          finishedSteps.value += 1
         }
+        if (!addIds.value.includes(message.data.node)) {
+          addIds.value.push(message.data.node)
+        }
+      }
+      if (message.type === 'progress_state') {
+        Object.keys(message.data.nodes).forEach(id => {
+          const node = message.data.nodes[id]
+          if (node.state === 'finished') {
+            if (!addIds.value.includes(id)) {
+              finishedSteps.value += node.value
+              addIds.value.push(id)
+            }
+          }
+        })
       }
       state.progress = Number((finishedSteps.value / totalSteps.value) * 100).toFixed(2)
       if (message.type === 'execution_success') {

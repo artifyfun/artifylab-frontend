@@ -1,6 +1,6 @@
 {
   "name": "@artifyfun/artify-lib",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Vue 3 components and utilities for ComfyUI workflow management",
   "type": "module",
   "main": "./index.global.js",
