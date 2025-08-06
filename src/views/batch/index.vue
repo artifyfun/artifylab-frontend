@@ -863,6 +863,21 @@ function getPrompt(data) {
   return prompt
 }
 
+const getOutputs = (prompt) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const client = getClient()
+      await client.connect()
+      const result = await client.getResult(prompt)
+      resolve(result)
+      await client.disconnect()
+    } catch (error) {
+      console.log(error)
+      reject(error)
+    }
+  })
+}
+
 // 执行批量处理
 async function executeBatch() {
   if (batchData.value.length === 0) {
@@ -875,8 +890,6 @@ async function executeBatch() {
     showError('noMappedFields')
     return
   }
-
-  const comfyClient = getClient()
 
   isExecuting.value = true
   startFromIndex.value = 1 // 重置开始位置
@@ -918,7 +931,8 @@ async function executeBatch() {
       let errorErrorMsg = ''
       try {
         // await new Promise(resolve => setTimeout(resolve, 1000))
-        await comfyClient.getResult(prompt)
+        const result = await getOutputs(prompt)
+        console.log(result)
         isSuccess = true
       } catch (err) {
         errorErrorMsg = err
