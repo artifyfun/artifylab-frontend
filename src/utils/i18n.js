@@ -539,7 +539,38 @@ const translations = {
     manualDownload: '手动下载',
     confirmManualDownload: '即将打开GitHub发布页面，您可以在那里下载最新版本。是否继续？',
     openingGitHubMessage: '正在打开GitHub发布页面...',
-    manualDownloadError: '打开GitHub页面失败，请手动访问发布页面'
+    manualDownloadError: '打开GitHub页面失败，请手动访问发布页面',
+
+    // 批量模式执行记录相关
+    viewExecutionHistory: '查看执行记录',
+    noExecutionRecords: '暂无记录',
+    continueFromLast: '从上次继续',
+    deleteRecord: '删除',
+    executionHistory: '执行记录',
+    executionHistoryTitle: '查看执行记录',
+    executionHistoryEmpty: '暂无执行记录',
+    continueFromLastExecution: '从上次继续执行',
+    deleteExecutionRecord: '删除执行记录',
+    executionRecordDeleted: '执行记录已删除',
+    confirmDeleteExecutionRecord: '确定要删除这条执行记录吗？此操作不可撤销。',
+    executionRecordRestored: '执行记录已恢复',
+    executionRecordRestoreFailed: '执行记录恢复失败',
+
+    // 历史记录详情标签
+    createdAt: '创建',
+    updatedAt: '更新',
+    totalCount: '总数',
+    successCount: '成功',
+    failedCount: '失败',
+    progressPercent: '进度',
+    startIndex: '开始索引',
+    lastCompleted: '上次完成',
+
+    // 执行状态
+    statusRunning: '运行中',
+    statusCompleted: '已完成',
+    statusFailed: '失败',
+    statusStopped: '已停止'
   },
   en: {
     // 通用操作
@@ -1065,7 +1096,38 @@ const translations = {
     manualDownload: 'Manual Download',
     confirmManualDownload: 'About to open GitHub releases page where you can download the latest version. Continue?',
     openingGitHubMessage: 'Opening GitHub releases page...',
-    manualDownloadError: 'Failed to open GitHub page, please manually visit the releases page'
+    manualDownloadError: 'Failed to open GitHub page, please manually visit the releases page',
+
+    // 批量模式执行记录相关
+    viewExecutionHistory: 'View Execution History',
+    noExecutionRecords: 'No Records',
+    continueFromLast: 'Continue from Last',
+    deleteRecord: 'Delete',
+    executionHistory: 'Execution History',
+    executionHistoryTitle: 'View Execution History',
+    executionHistoryEmpty: 'No execution records',
+    continueFromLastExecution: 'Continue from last execution',
+    deleteExecutionRecord: 'Delete Execution Record',
+    executionRecordDeleted: 'Execution record deleted',
+    confirmDeleteExecutionRecord: 'Are you sure you want to delete this execution record? This action cannot be undone.',
+    executionRecordRestored: 'Execution record restored',
+    executionRecordRestoreFailed: 'Failed to restore execution record',
+
+    // 历史记录详情标签
+    createdAt: 'Created',
+    updatedAt: 'Updated',
+    totalCount: 'Total',
+    successCount: 'Success',
+    failedCount: 'Failed',
+    progressPercent: 'Progress',
+    startIndex: 'Start Index',
+    lastCompleted: 'Last Completed',
+
+    // 执行状态
+    statusRunning: 'Running',
+    statusCompleted: 'Completed',
+    statusFailed: 'Failed',
+    statusStopped: 'Stopped'
   }
 }
 

@@ -5,6 +5,14 @@
       <h1 class="page-title">{{ t('batchMode') }}</h1>
       <p class="page-description">{{ t('batchModeDescription') }}</p>
     </div>
+    <div class="flex justify-end mb-2">
+      <a-button
+        @click="openHistoryDialog"
+        class="nav-btn"
+      >
+        📝 {{ t('viewExecutionHistory') }}
+      </a-button>
+    </div>
 
     <!-- 主要内容区域 -->
     <div class="main-content">
@@ -353,6 +361,56 @@
       </div>
     </div>
   </div>
+
+  <!-- 执行记录弹窗 -->
+  <a-modal
+    v-model:open="showHistoryDialog"
+    :title="t('executionHistoryTitle')"
+    width="820px"
+    :footer="null"
+  >
+    <div class="history-dialog">
+      <div v-if="historyRecords.length === 0" class="history-empty">{{ t('noExecutionRecords') }}</div>
+      <div v-else class="history-list">
+        <div class="history-item" v-for="rec in historyRecords" :key="rec.id">
+          <div class="history-head">
+            <div class="title">
+              <span class="name">{{ rec.appName || t('app') }}</span>
+              <span class="status" :class="rec.status">{{ getStatusText(rec.status) }}</span>
+            </div>
+            <div class="meta">
+              <span>{{ t('createdAt') }}: {{ new Date(rec.createdAt).toLocaleString() }}</span>
+              <span>{{ t('updatedAt') }}: {{ new Date(rec.updatedAt).toLocaleString() }}</span>
+            </div>
+          </div>
+          <div class="history-body">
+            <div class="row">
+              <span>{{ t('totalCount') }}: {{ rec.total }}</span>
+              <span>{{ t('successCount') }}: {{ rec.success }}</span>
+              <span>{{ t('failedCount') }}: {{ rec.failed }}</span>
+              <span>{{ t('progressPercent') }}: {{ rec.percent }}%</span>
+              <span>{{ t('startIndex') }}: {{ rec.startFromIndex }}</span>
+              <span>{{ t('lastCompleted') }}: {{ rec.lastIndexProcessed }}</span>
+            </div>
+            <div class="mini-progress">
+              <div class="mini-progress-inner" :style="{ width: (rec.percent || 0) + '%' }"></div>
+              <span class="mini-progress-text">{{ rec.percent }}%</span>
+            </div>
+            <div class="row logs" v-if="rec.logs && rec.logs.length">
+              <span class="log" v-for="(lg, i) in rec.logs.slice(0, 3)" :key="i">
+                [{{ lg.time }}] {{ lg.type }}: {{ lg.message }}
+              </span>
+              <span v-if="rec.logs.length > 3">…</span>
+            </div>
+          </div>
+          <div class="history-actions">
+            <a-button size="small" type="primary" @click="restoreFromRecord(rec)">{{ t('continueFromLast') }}</a-button>
+            <a-button size="small" danger @click="deleteHistoryRecord(rec.id)">{{ t('deleteRecord') }}</a-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </a-modal>
 </template>
 
 <script setup>
@@ -364,6 +422,7 @@ import { t } from '@/utils/i18n'
 import { showError, showSuccess, showInfo, uuidv4, getSeed } from '@/utils'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { ExcelProcessor } from '@/utils/excel-utils'
+import localforage from 'localforage'
 import {
   FolderOpenOutlined,
   FileTextOutlined,
@@ -480,6 +539,126 @@ function formatDuration(ms) {
   if (minutes) parts.push(`${minutes}${t('minuteUnit')}`)
   if (seconds && parts.length < 3) parts.push(`${seconds}${t('secondUnit')}`)
   return parts.length ? parts.join(t('timeUnitSeparator')) : t('lessThanOneSecond')
+}
+
+// ===== 执行记录（localforage） =====
+const showHistoryDialog = ref(false)
+const historyRecords = ref([])
+const currentHistoryRecordId = ref(null)
+const historyLoadedKey = ref('')
+const historyKey = computed(() => (currentApp.value && currentApp.value.id) ? `batch/history/${currentApp.value.id}` : '')
+
+async function ensureHistoryLoaded() {
+  if (!historyKey.value) {
+    return
+  }
+  if (historyLoadedKey.value === historyKey.value && historyRecords.value.length) return
+  try {
+    const list = (await localforage.getItem(historyKey.value)) || []
+    historyRecords.value = Array.isArray(list) ? list : []
+    // 按更新时间倒序
+    historyRecords.value.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+    historyLoadedKey.value = historyKey.value
+  } catch (error) {
+    historyRecords.value = []
+  }
+}
+
+async function saveHistory() {
+  if (!historyKey.value) return
+  try {
+    await localforage.setItem(historyKey.value, JSON.parse(JSON.stringify(historyRecords.value)))
+  } catch (_) {}
+}
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj))
+}
+
+async function createNewHistoryRecord() {
+  const newId = uuidv4()
+  const now = new Date().toISOString()
+  const record = {
+    id: newId,
+    appId: currentApp.value?.id,
+    appName: currentApp.value?.name,
+    createdAt: now,
+    updatedAt: now,
+    status: 'running',
+    clientId: state.clientId,
+    total: executionProgress.total,
+    processed: 0,
+    success: 0,
+    failed: 0,
+    percent: 0,
+    startFromIndex: startFromIndex.value,
+    lastIndexProcessed: startFromIndex.value - 1,
+    inputsMapping: deepClone(state.inputs),
+    batchSource: {
+      type: selectedSourceType.value,
+      directoryPath: directoryPath.value,
+      fileFilter: fileFilter.value,
+      uploadedFiles: deepClone(uploadedFiles.value?.map(f => ({ name: f.name, size: f.size }))) || [],
+      jsonInput: jsonInput.value,
+    },
+    batchData: deepClone(batchData.value),
+    logs: [],
+    results: [],
+  }
+  historyRecords.value.unshift(record)
+  await saveHistory()
+  return newId
+}
+
+async function upsertHistoryRecord(update) {
+  if (!update?.id) return
+  const idx = historyRecords.value.findIndex(r => r.id === update.id)
+  if (idx === -1) return
+  const rec = historyRecords.value[idx]
+  const merged = { ...rec, ...update }
+  if (typeof update.processed === 'number') {
+    merged.lastIndexProcessed = Math.max(rec.lastIndexProcessed || 0, update.processed + (rec.startFromIndex ? (rec.startFromIndex - 1) : 0))
+  }
+  if (Array.isArray(update.logs) && update.logs.length) {
+    merged.logs = [...update.logs, ...(rec.logs || [])]
+  }
+  if (update.resultItem) {
+    merged.results = [...(rec.results || []), update.resultItem]
+    merged.lastIndexProcessed = Math.max(rec.lastIndexProcessed || 0, update.resultItem.index)
+  }
+  merged.updatedAt = new Date().toISOString()
+  historyRecords.value.splice(idx, 1, merged)
+  await saveHistory()
+}
+
+async function openHistoryDialog() {
+  await ensureHistoryLoaded()
+  showHistoryDialog.value = true
+}
+
+async function deleteHistoryRecord(id) {
+  const idx = historyRecords.value.findIndex(r => r.id === id)
+  if (idx > -1) {
+    historyRecords.value.splice(idx, 1)
+    await saveHistory()
+  }
+}
+
+function restoreFromRecord(rec) {
+  if (!rec) return
+  // 恢复源与数据、映射
+  selectedSourceType.value = rec.batchSource?.type || 'json'
+  directoryPath.value = rec.batchSource?.directoryPath || ''
+  fileFilter.value = rec.batchSource?.fileFilter || 'all'
+  jsonInput.value = rec.batchSource?.jsonInput || '[]'
+  batchData.value = Array.isArray(rec.batchData) ? deepClone(rec.batchData) : []
+  state.inputs = Array.isArray(rec.inputsMapping) ? deepClone(rec.inputsMapping) : state.inputs
+  updateAvailableFields()
+  // 继续索引
+  const nextIndex = Math.min((rec.lastIndexProcessed || 0), batchData.value.length)
+  startFromIndex.value = Math.max(1, nextIndex)
+  currentStep.value = 2
+  showHistoryDialog.value = false
 }
 
 // 计算属性
@@ -625,6 +804,8 @@ async function init() {
   })
 
   state.inputs = inputs
+  // 加载当前应用的执行记录
+  await ensureHistoryLoaded()
 }
 
 // 选择目录
@@ -962,6 +1143,11 @@ async function executeBatch() {
     const startIndex = startFromIndex.value - 1
     const itemsToProcess = batchData.value.slice(startIndex)
 
+    // 创建执行记录
+    await ensureHistoryLoaded()
+    const recordId = await createNewHistoryRecord()
+    currentHistoryRecordId.value = recordId
+
     for (let i = 0; i < itemsToProcess.length; i++) {
       if (!isExecuting.value) {
         // 执行被停止
@@ -1009,6 +1195,30 @@ async function executeBatch() {
 
       executionProgress.processed++
       executionProgress.percent = Math.round((executionProgress.processed / executionProgress.total) * 100)
+
+      // 更新执行记录（逐条）
+      await upsertHistoryRecord({
+        id: recordId,
+        processed: executionProgress.processed,
+        success: executionProgress.success,
+        failed: executionProgress.failed,
+        percent: executionProgress.percent,
+        currentItem: executionProgress.currentItem,
+        logs: [
+          {
+            time: new Date().toLocaleTimeString(),
+            type: isSuccess ? 'success' : 'error',
+            message: isSuccess ? t('itemProcessedSuccessfully', { index: currentIndex }) : String(errorErrorMsg || 'error')
+          }
+        ],
+        resultItem: {
+          index: currentIndex,
+          durationMs: itemDuration,
+          success: isSuccess,
+          error: isSuccess ? null : String(errorErrorMsg || 'error'),
+          data: item
+        }
+      })
     }
 
     // 执行完成
@@ -1029,6 +1239,13 @@ async function executeBatch() {
         success: executionProgress.success,
         failed: executionProgress.failed
       })
+
+      // 结束记录
+      await upsertHistoryRecord({
+        id: currentHistoryRecordId.value,
+        status: 'completed',
+        currentItem: ''
+      })
     }
 
   } catch (error) {
@@ -1042,6 +1259,7 @@ async function executeBatch() {
       type: 'error'
     })
     showError('batchExecutionFailed')
+    await upsertHistoryRecord({ id: currentHistoryRecordId.value, status: 'failed', currentItem: '' })
   } finally {
     isExecuting.value = false
   }
@@ -1066,6 +1284,9 @@ async function stopExecution() {
     message: t('executionStoppedByUser'),
     type: 'info'
   })
+
+  // 标记记录已停止
+  await upsertHistoryRecord({ id: currentHistoryRecordId.value, status: 'stopped', currentItem: '' })
 }
 
 // 清除日志
@@ -1103,6 +1324,17 @@ function formatFileSize(bytes) {
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// 获取状态文本
+function getStatusText(status) {
+  const statusMap = {
+    'running': t('statusRunning'),
+    'completed': t('statusCompleted'),
+    'failed': t('statusFailed'),
+    'stopped': t('statusStopped')
+  }
+  return statusMap[status] || status
 }
 
 // 打开输出目录
@@ -1160,6 +1392,13 @@ onBeforeUnmount(() => {
     }
   }
 })
+
+// 在应用ID变更后自动加载对应历史记录
+watch(historyKey, (newKey) => {
+  if (newKey) {
+    ensureHistoryLoaded()
+  }
+})
 </script>
 
 <style lang="less" scoped>
@@ -1173,7 +1412,7 @@ onBeforeUnmount(() => {
 
 .page-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 10px;
 
   .page-title {
     font-size: 2.5rem;
@@ -2413,5 +2652,107 @@ onBeforeUnmount(() => {
   font-size: 1.08rem;
   min-width: 80px;
   text-align: right;
+}
+
+/* 执行记录弹窗美化 */
+.history-dialog {
+  .history-empty {
+    color: #94a3b8;
+    text-align: center;
+    padding: 24px 0;
+  }
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .history-item {
+    background: rgba(30,41,59,0.65);
+    border: 1px solid rgba(56, 70, 102, 0.5);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 4px 10px #0003;
+    transition: border-color .2s, transform .2s;
+    &:hover {
+      border-color: #0ea5e9;
+      transform: translateY(-1px);
+    }
+  }
+  .history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      .name {
+        font-weight: 600;
+        color: #e2e8f0;
+        font-size: 1.02rem;
+      }
+      .status {
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 12px;
+        text-transform: capitalize;
+        border: 1px solid transparent;
+        &.running { background: rgba(14,165,233,0.15); color: #38bdf8; border-color: #38bdf833; }
+        &.completed { background: rgba(16,185,129,0.15); color: #10b981; border-color: #10b98133; }
+        &.failed { background: rgba(239,68,68,0.15); color: #ef4444; border-color: #ef444433; }
+        &.stopped { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: #f59e0b33; }
+      }
+    }
+    .meta {
+      display: flex;
+      gap: 12px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  }
+  .history-body {
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: #cbd5e1;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .logs {
+      background: rgba(15,23,42,0.45);
+      border: 1px solid rgba(56, 70, 102, 0.5);
+      border-radius: 8px;
+      padding: 8px;
+      .log { color: #94a3b8; }
+    }
+  }
+  .mini-progress {
+    position: relative;
+    height: 8px;
+    background: rgba(51,65,85,0.6);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 6px 0 10px 0;
+    .mini-progress-inner {
+      height: 100%;
+      background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+      transition: width .35s ease;
+    }
+    .mini-progress-text {
+      position: absolute;
+      right: 8px;
+      top: -18px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  }
+  .history-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+  }
 }
 </style>
