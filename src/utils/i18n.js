@@ -542,12 +542,12 @@ const translations = {
     manualDownloadError: '打开GitHub页面失败，请手动访问发布页面',
 
     // 批量模式执行记录相关
-    viewExecutionHistory: '查看执行记录',
+    viewExecutionHistory: '执行记录',
     noExecutionRecords: '暂无记录',
     continueFromLast: '从上次继续',
     deleteRecord: '删除',
     executionHistory: '执行记录',
-    executionHistoryTitle: '查看执行记录',
+    executionHistoryTitle: '执行记录',
     executionHistoryEmpty: '暂无执行记录',
     continueFromLastExecution: '从上次继续执行',
     deleteExecutionRecord: '删除执行记录',
@@ -570,7 +570,24 @@ const translations = {
     statusRunning: '运行中',
     statusCompleted: '已完成',
     statusFailed: '失败',
-    statusStopped: '已停止'
+    statusStopped: '已停止',
+
+    // 自动关闭计算机相关
+    autoShutdown: '自动关闭计算机',
+    autoShutdownDescription: '执行完成后自动关闭计算机',
+    autoShutdownNote: '注意：macOS系统需要管理员权限才能执行关机操作',
+    autoShutdownEnabled: '已启用自动关闭',
+    autoShutdownDisabled: '已禁用自动关闭',
+    shutdownAfterCompletion: '完成后关闭计算机',
+    shutdownConfirmation: '确认关闭计算机',
+    shutdownConfirmationMessage: '批量处理完成后将自动关闭计算机，是否继续？',
+    shutdownCancelled: '已取消自动关闭',
+    shutdownInProgress: '正在关闭计算机...',
+    shutdownFailed: '关闭计算机失败',
+    shutdownSuccess: '计算机将在30秒后关闭',
+    shutdownCountdown: '计算机将在 {seconds} 秒后关闭',
+    cancelShutdown: '取消关闭',
+    shutdownCancelledSuccess: '已取消自动关闭'
   },
   en: {
     // 通用操作
@@ -1099,12 +1116,12 @@ const translations = {
     manualDownloadError: 'Failed to open GitHub page, please manually visit the releases page',
 
     // 批量模式执行记录相关
-    viewExecutionHistory: 'View Execution History',
+    viewExecutionHistory: 'Execution History',
     noExecutionRecords: 'No Records',
     continueFromLast: 'Continue from Last',
     deleteRecord: 'Delete',
     executionHistory: 'Execution History',
-    executionHistoryTitle: 'View Execution History',
+    executionHistoryTitle: 'Execution History',
     executionHistoryEmpty: 'No execution records',
     continueFromLastExecution: 'Continue from last execution',
     deleteExecutionRecord: 'Delete Execution Record',
@@ -1127,7 +1144,24 @@ const translations = {
     statusRunning: 'Running',
     statusCompleted: 'Completed',
     statusFailed: 'Failed',
-    statusStopped: 'Stopped'
+    statusStopped: 'Stopped',
+
+    // 自动关闭计算机相关
+    autoShutdown: 'Auto Shutdown Computer',
+    autoShutdownDescription: 'Computer will be shut down automatically after execution',
+    autoShutdownNote: 'Note: macOS requires administrator privileges to perform shutdown operations',
+    autoShutdownEnabled: 'Auto Shutdown Enabled',
+    autoShutdownDisabled: 'Auto Shutdown Disabled',
+    shutdownAfterCompletion: 'Shutdown Computer After Completion',
+    shutdownConfirmation: 'Confirm Shutdown',
+    shutdownConfirmationMessage: 'Computer will be shut down automatically after batch processing. Continue?',
+    shutdownCancelled: 'Auto Shutdown Cancelled',
+    shutdownInProgress: 'Shutting down computer...',
+    shutdownFailed: 'Failed to shut down computer',
+    shutdownSuccess: 'Computer will shut down in 30 seconds',
+    shutdownCountdown: 'Computer will shut down in {seconds} seconds',
+    cancelShutdown: 'Cancel Shutdown',
+    shutdownCancelledSuccess: 'Auto Shutdown Cancelled'
   }
 }
 

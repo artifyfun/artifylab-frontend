@@ -296,6 +296,25 @@
             <span class="native-slider-value">{{ startFromIndex }} / {{ batchData.length }}</span>
           </div>
 
+          <!-- 自动关闭计算机配置 -->
+          <div class="auto-shutdown-config">
+            <div class="shutdown-toggle">
+              <a-switch
+                v-model:checked="autoShutdownEnabled"
+                :disabled="isExecuting"
+                class="shutdown-switch"
+              />
+              <div class="shutdown-info">
+                <div class="shutdown-label">{{ t('autoShutdown') }}</div>
+                <div class="shutdown-description">{{ t('autoShutdownDescription') }}</div>
+                <div class="shutdown-note">
+                  <InfoCircleOutlined class="shutdown-note-icon" />
+                  <span>{{ t('autoShutdownNote') }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 进度条 -->
           <div class="custom-progress-bar">
             <div class="custom-progress-inner" :style="{ width: executionProgress.percent + '%', background: executionProgress.strokeColor }"></div>
@@ -488,6 +507,7 @@ const draggedField = ref(null)
 // 执行相关
 const isExecuting = ref(false)
 const startFromIndex = ref(1) // 新增：开始执行的位置
+const autoShutdownEnabled = ref(false) // 新增：自动关闭计算机开关
 const executionProgress = reactive({
   total: 0,
   processed: 0,
@@ -1121,7 +1141,7 @@ async function executeBatch() {
 
   isExecuting.value = true
   executionProgress.total = batchData.value.length
-  executionProgress.processed = 0
+  executionProgress.processed = startFromIndex.value - 1
   executionProgress.success = 0
   executionProgress.failed = 0
   executionProgress.percent = 0
@@ -1158,7 +1178,7 @@ async function executeBatch() {
       const currentIndex = startIndex + i + 1
 
       // 更新当前处理的项目
-      executionProgress.currentItem = `${currentIndex}: ${JSON.stringify(item).substring(0, 50)}...`
+      executionProgress.currentItem = `${currentIndex}: ${JSON.stringify(item).substring(0, 100)}...`
 
       const prompt = getPrompt(item)
       let isSuccess = false
@@ -1246,6 +1266,13 @@ async function executeBatch() {
         status: 'completed',
         currentItem: ''
       })
+
+      unloadModel()
+
+      // 检查是否需要自动关闭计算机
+      if (autoShutdownEnabled.value) {
+        await handleAutoShutdown()
+      }
     }
 
   } catch (error) {
@@ -1268,6 +1295,7 @@ async function executeBatch() {
 // 停止执行
 async function stopExecution() {
   interrupt()
+  unloadModel()
   // 立即设置停止状态，防止继续执行
   isExecuting.value = false
 
@@ -1349,6 +1377,75 @@ async function openOutputDirectory() {
   } catch (error) {
     console.error('打开输出目录失败:', error)
     showError('openOutputDirectoryFailed')
+  }
+}
+
+// 处理自动关闭计算机
+async function handleAutoShutdown() {
+  try {
+    // 添加关闭日志
+    executionLogs.value.unshift({
+      time: new Date().toLocaleTimeString(),
+      message: t('shutdownInProgress'),
+      type: 'info'
+    })
+
+    // 调用关闭API
+    await shutdown()
+
+    // 显示成功消息
+    showSuccess('shutdownSuccess')
+
+    // 添加成功日志
+    executionLogs.value.unshift({
+      time: new Date().toLocaleTimeString(),
+      message: t('shutdownSuccess'),
+      type: 'success'
+    })
+  } catch (error) {
+    console.error('自动关闭计算机失败:', error)
+    showError('shutdownFailed')
+    executionLogs.value.unshift({
+      time: new Date().toLocaleTimeString(),
+      message: t('shutdownFailed'),
+      type: 'error'
+    })
+  }
+}
+
+async function shutdown() {
+  const response = await fetch(`${appStore.config.serverHost}/api/shutdown`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      delay: 30,
+      force: true
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Shutdown request failed')
+  }
+
+  return response.json()
+}
+
+async function unloadModel() {
+  const response = await fetch(`${appStore.config.comfyHost}/free`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      "unload_models": true,
+      "free_memory": true
+    })
+  })
+
+  if (!response.ok) {
+    throw new Error('UnloadModel failed')
   }
 }
 
@@ -2465,9 +2562,19 @@ watch(historyKey, (newKey) => {
         .slider-container {
           width: 100%;
         }
-
-
       }
+    }
+  }
+
+  .auto-shutdown-config {
+    .shutdown-toggle {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .shutdown-switch {
+      align-self: flex-start;
     }
   }
 
@@ -2550,6 +2657,9 @@ watch(historyKey, (newKey) => {
   font-weight: 500;
   font-size: 1.05rem;
   box-shadow: 0 2px 8px #0002;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .current-item-content {
   font-family: 'JetBrains Mono', 'Consolas', monospace;
@@ -2652,6 +2762,95 @@ watch(historyKey, (newKey) => {
   font-size: 1.08rem;
   min-width: 80px;
   text-align: right;
+}
+
+/* 自动关闭计算机配置样式 */
+.auto-shutdown-config {
+  margin: 18px 0 24px 0;
+  padding: 16px 18px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(56, 70, 102, 0.3);
+}
+
+.shutdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.shutdown-switch {
+  :deep(.ant-switch) {
+    background: rgba(56, 70, 102, 0.6);
+    border-color: rgba(56, 70, 102, 0.8);
+  }
+
+  :deep(.ant-switch-checked) {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    border-color: #10b981;
+  }
+
+  :deep(.ant-switch-handle) {
+    background: #e2e8f0;
+    border-radius: 50%;
+  }
+
+  :deep(.ant-switch-checked .ant-switch-handle) {
+    background: #ffffff;
+  }
+}
+
+.shutdown-info {
+  flex: 1;
+}
+
+.shutdown-label {
+  font-weight: 600;
+  color: #e2e8f0;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.shutdown-description {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.shutdown-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+  color: #f59e0b;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.shutdown-note-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.shutdown-status {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.shutdown-status-tag {
+  :deep(.ant-tag) {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #10b981;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
 }
 
 /* 执行记录弹窗美化 */

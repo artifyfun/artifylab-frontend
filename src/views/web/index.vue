@@ -20,12 +20,34 @@ const previewProps = reactive({
   lang: 'zh',
 })
 
+async function unloadModel() {
+  const response = await fetch(`${appStore.config.comfyHost}/free`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      "unload_models": true,
+      "free_memory": true
+    })
+  })
+
+  if (!response.ok) {
+    throw new Error('UnloadModel failed')
+  }
+}
+
 async function init() {
   await appStore.initConfig()
   const app = await appStore.getAppById(appStore.config.activeAppId)
   const fullCode = genHtml(app, app.code, appStore.config)
   previewProps.html = fullCode
   previewProps.lang = appStore.config.lang
+  const lastAppId = sessionStorage.getItem('lastAppId')
+  if (lastAppId && lastAppId !== appStore.config.activeAppId) {
+    unloadModel()
+  }
+  sessionStorage.setItem('lastAppId', appStore.config.activeAppId)
 }
 
 init()
