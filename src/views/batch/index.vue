@@ -293,6 +293,9 @@
             <div class="custom-progress-inner" :style="{ width: executionProgress.percent + '%', background: executionProgress.strokeColor }"></div>
             <span class="custom-progress-text">{{ executionProgress.percent }}%</span>
           </div>
+          <div class="eta-row" v-if="isExecuting && executionProgress.processed > 0 && executionProgress.processed < executionProgress.total">
+            ⏳ {{ t('estimatedRemaining') }}: {{ estimatedRemainingText }}
+          </div>
 
           <!-- 当前处理项高亮 -->
           <div class="current-item-highlight" v-if="executionProgress.currentItem">
@@ -310,7 +313,7 @@
 
           <!-- 操作按钮 -->
           <div class="custom-actions">
-            <button class="btn-primary relative" v-if="!isExecuting" @click="executeBatch">
+            <button class="relative btn-primary" v-if="!isExecuting" @click="executeBatch">
               ▶️ {{ t('startBatchExecution') }}
             </button>
             <button class="btn-danger" v-else @click="stopExecution">
@@ -437,6 +440,47 @@ const executionProgress = reactive({
   currentItem: ''
 })
 const executionLogs = ref([]) // 新增：执行日志
+
+// 预计剩余时间统计
+const executionTimeStats = reactive({
+  totalMs: 0,
+  count: 0
+})
+
+const averageItemMs = computed(() => {
+  return executionTimeStats.count > 0 ? executionTimeStats.totalMs / executionTimeStats.count : 0
+})
+
+const estimatedRemainingMs = computed(() => {
+  const remaining = Math.max(executionProgress.total - executionProgress.processed, 0)
+  return Math.round(remaining * averageItemMs.value)
+})
+
+const estimatedRemainingText = computed(() => formatDuration(estimatedRemainingMs.value))
+
+function nowMs() {
+  try {
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return performance.now()
+    }
+  } catch (_) {}
+  return Date.now()
+}
+
+function formatDuration(ms) {
+  if (!ms || ms <= 0 || !Number.isFinite(ms)) return t('lessThanOneSecond')
+  const totalSeconds = Math.max(1, Math.floor(ms / 1000))
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const parts = []
+  if (days) parts.push(`${days}${t('dayUnit')}`)
+  if (hours) parts.push(`${hours}${t('hourUnit')}`)
+  if (minutes) parts.push(`${minutes}${t('minuteUnit')}`)
+  if (seconds && parts.length < 3) parts.push(`${seconds}${t('secondUnit')}`)
+  return parts.length ? parts.join(t('timeUnitSeparator')) : t('lessThanOneSecond')
+}
 
 // 计算属性
 const canProceed = computed(() => {
@@ -863,19 +907,22 @@ function getPrompt(data) {
   return prompt
 }
 
-const getOutputs = (prompt) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const client = getClient()
-      await client.connect()
-      const result = await client.getResult(prompt)
-      resolve(result)
-      await client.disconnect()
-    } catch (error) {
-      console.log(error)
-      reject(error)
-    }
-  })
+const getOutputs = async (prompt) => {
+  try {
+    const client = getClient()
+    await client.connect()
+    const result = await client.getResult(prompt)
+    await client.disconnect()
+    return result
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+function interrupt() {
+  const client = getClient()
+  return client.interrupt()
 }
 
 // 执行批量处理
@@ -892,7 +939,6 @@ async function executeBatch() {
   }
 
   isExecuting.value = true
-  startFromIndex.value = 1 // 重置开始位置
   executionProgress.total = batchData.value.length
   executionProgress.processed = 0
   executionProgress.success = 0
@@ -902,10 +948,12 @@ async function executeBatch() {
   executionProgress.strokeColor = '#10b981'
   executionProgress.currentItem = ''
   executionLogs.value = []
+  executionTimeStats.totalMs = 0
+  executionTimeStats.count = 0
 
   try {
     // 添加开始日志
-    executionLogs.value.push({
+    executionLogs.value.unshift({
       time: new Date().toLocaleTimeString(),
       message: t('batchExecutionStarted'),
       type: 'info'
@@ -929,25 +977,30 @@ async function executeBatch() {
       const prompt = getPrompt(item)
       let isSuccess = false
       let errorErrorMsg = ''
+      const itemStart = nowMs()
       try {
         // await new Promise(resolve => setTimeout(resolve, 1000))
         const result = await getOutputs(prompt)
-        console.log(result)
-        isSuccess = true
+        if (result.status.completed) {
+          isSuccess = true
+        }
       } catch (err) {
         errorErrorMsg = err
       }
+      const itemDuration = Math.max(0, nowMs() - itemStart)
+      executionTimeStats.totalMs += itemDuration
+      executionTimeStats.count += 1
 
       if (isSuccess) {
         executionProgress.success++
-        executionLogs.value.push({
+        executionLogs.value.unshift({
           time: new Date().toLocaleTimeString(),
           message: t('itemProcessedSuccessfully', { index: currentIndex }),
           type: 'success'
         })
       } else {
         executionProgress.failed++
-        executionLogs.value.push({
+        executionLogs.value.unshift({
           time: new Date().toLocaleTimeString(),
           message: errorErrorMsg,
           type: 'error'
@@ -996,6 +1049,7 @@ async function executeBatch() {
 
 // 停止执行
 async function stopExecution() {
+  interrupt()
   // 立即设置停止状态，防止继续执行
   isExecuting.value = false
 
@@ -1007,7 +1061,7 @@ async function stopExecution() {
   executionProgress.currentItem = ''
 
   // 添加停止日志
-  executionLogs.value.push({
+  executionLogs.value.unshift({
     time: new Date().toLocaleTimeString(),
     message: t('executionStoppedByUser'),
     type: 'info'
