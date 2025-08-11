@@ -23,6 +23,7 @@ const editorState = reactive({
   loading: false,
   paramsNodes: props.template.paramsNodes,
   prompt: {},
+  workflow: null
 })
 const playground = ref(null)
 
@@ -30,8 +31,9 @@ const postMessage = (message) => {
   playground.value.postMessage(message)
 }
 
-const updatePrompt = (prompt) => {
-  editorState.prompt = prompt
+const updatePrompt = (data) => {
+  editorState.prompt = data.output
+  editorState.workflow = data.workflow
 }
 
 const updateParamsNodes = (nodes) => {
@@ -51,7 +53,7 @@ const getData = async () => {
   return {
     prompt: editorState.prompt,
     paramsNodes: editorState.paramsNodes,
-    workflow: props.template.workflow
+    workflow: editorState.workflow || props.template.workflow
   }
 }
 

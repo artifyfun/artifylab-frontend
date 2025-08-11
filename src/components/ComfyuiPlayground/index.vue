@@ -86,7 +86,7 @@ const handleMessage = (event) => {
     emit('updateParamsNodes', paramsNodes)
   }
   if (eventType === 'updatePrompt') {
-    emit('updatePrompt', data.output)
+    emit('updatePrompt', data)
   }
   if (eventType === 'onload') {
     emit('onload')

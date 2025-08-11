@@ -79,7 +79,7 @@
             </div>
 
             <!-- 操作按钮 -->
-            <div class="flex items-center space-x-2">
+            <!-- <div class="flex items-center space-x-2">
               <button
                 @click.stop="$emit('view-detail', app)"
                 class="p-2 rounded-lg transition-colors text-slate-400 hover:text-white hover:bg-tech-darker"
@@ -101,7 +101,7 @@
               >
                 <i class="fas fa-trash"></i>
               </button>
-            </div>
+            </div> -->
           </div>
         </transition-group>
       </div>

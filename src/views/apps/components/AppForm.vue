@@ -213,8 +213,9 @@ const handleRebuild = () => {
 }
 
 // 处理工作流保存
-const handleWorkflowSave = ({ prompt, paramsNodes }) => {
+const handleWorkflowSave = ({ prompt, paramsNodes, workflow }) => {
   currentApp.value.template.prompt = prompt
+  currentApp.value.template.workflow = workflow
   currentApp.value.template.paramsNodes = paramsNodes
   showWorkflowModal.value = false
 }
