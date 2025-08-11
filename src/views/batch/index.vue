@@ -5,17 +5,17 @@
       <h1 class="page-title">{{ t('batchMode') }}</h1>
       <p class="page-description">{{ t('batchModeDescription') }}</p>
     </div>
-    <div class="flex justify-end mb-2">
-      <a-button
-        @click="openHistoryDialog"
-        class="nav-btn"
-      >
-        📝 {{ t('viewExecutionHistory') }}
-      </a-button>
-    </div>
 
     <!-- 主要内容区域 -->
     <div class="main-content">
+      <div class="flex justify-end mb-2" style="padding: 24px 0;">
+        <a-button
+          @click="openHistoryDialog"
+          class="nav-btn"
+        >
+          📝 {{ t('viewExecutionHistory') }}
+        </a-button>
+      </div>
       <!-- 步骤指示器 -->
       <a-steps :current="currentStep" class="steps-container">
         <a-step :title="t('selectSource')" :description="t('selectSourceDesc')" />
@@ -301,7 +301,6 @@
             <div class="shutdown-toggle">
               <a-switch
                 v-model:checked="autoShutdownEnabled"
-                :disabled="isExecuting"
                 class="shutdown-switch"
               />
               <div class="shutdown-info">
