@@ -10,6 +10,10 @@ export const CDN_URLS = {
   FONT_AWESOME: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
 };
 
+function getInputType(value) {
+  return Object.prototype.toString.call(value).slice(8, -1).toLowerCase()
+}
+
 
 const genMeta = (app) => {
   const { template } = app
@@ -39,7 +43,8 @@ const genMeta = (app) => {
               props: {
                 label,
                 key,
-                title
+                title,
+                valueType: 'string'
               },
               children: [
                 {
@@ -60,7 +65,8 @@ const genMeta = (app) => {
               props: {
                 label,
                 key,
-                title
+                title,
+                valueType: 'boolean'
               },
               children: [
                 {
@@ -80,7 +86,8 @@ const genMeta = (app) => {
               props: {
                 label,
                 key,
-                title
+                title,
+                valueType: 'number'
               },
               children: [
                 {
@@ -100,7 +107,8 @@ const genMeta = (app) => {
               props: {
                 label,
                 key,
-                title
+                title,
+                valueType: 'number'
               },
               children: [
                 {
@@ -126,7 +134,8 @@ const genMeta = (app) => {
                 props: {
                   label,
                   key,
-                  title
+                  title,
+                  valueType: 'string'
                 },
                 children: [
                   {
@@ -145,7 +154,8 @@ const genMeta = (app) => {
                 props: {
                   label,
                   key,
-                  title
+                  title,
+                  valueType: 'string'
                 },
                 children: [
                   {
@@ -164,7 +174,8 @@ const genMeta = (app) => {
                 props: {
                   label,
                   key,
-                  title
+                  title,
+                  valueType: 'string'
                 },
                 children: [
                   {
@@ -183,7 +194,8 @@ const genMeta = (app) => {
                 props: {
                   label,
                   key,
-                  title
+                  title,
+                  valueType: getInputType(selectedWidget.options.values[0])
                 },
                 children: [
                   {
@@ -212,7 +224,8 @@ const genMeta = (app) => {
               props: {
                 label,
                 key,
-                title
+                title,
+                valueType: 'undefined'
               },
               children: [
                 {

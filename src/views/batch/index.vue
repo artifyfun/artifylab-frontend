@@ -194,6 +194,7 @@
                   <div class="field-info">
                     <div class="field-name">{{ field.name }}</div>
                     <div class="field-key">{{ field.key }}</div>
+                    <div class="field-type">{{ getFieldType(field) }}</div>
                   </div>
                   <div class="field-preview">{{ field.preview }}</div>
                 </div>
@@ -215,7 +216,7 @@
                   v-for="input in state.inputs"
                   :key="input.id"
                   class="target-input-item"
-                  :class="{ 'has-mapping': input.valueMap }"
+                  :class="{ 'has-mapping': input.valueMap || input.manualValue !== undefined }"
                   @dragover="handleDragOver"
                   @drop="handleDrop($event, input)"
                 >
@@ -226,6 +227,7 @@
                     <div class="input-info">
                       <div class="input-label">{{ input.label }}</div>
                       <div class="input-key">{{ input.key }}</div>
+                      <div class="input-type">{{ input.valueType }}</div>
                     </div>
                   </div>
 
@@ -234,6 +236,12 @@
                     <div class="mapped-field">
                       <DatabaseOutlined />
                       <span>{{ input.valueMap.name }}</span>
+                      <span class="type-match" v-if="isTypeCompatible(input.valueMap, input)">
+                        ✅ {{ t('typeMatch') }}
+                      </span>
+                      <span class="type-mismatch" v-else>
+                        ⚠️ {{ t('typeMismatch') }}
+                      </span>
                       <a-button
                         type="text"
                         size="small"
@@ -245,10 +253,44 @@
                     </div>
                   </div>
 
-                  <!-- 拖拽提示 -->
+                  <!-- 手动输入显示 -->
+                  <div v-else-if="input.manualValue !== undefined" class="manual-input-display">
+                    <div class="manual-field">
+                      <EditOutlined />
+                      <span>{{ t('manualValue') }}: {{ input.manualValue }}</span>
+                      <a-button
+                        type="text"
+                        size="small"
+                        @click="removeManualValue(input)"
+                        class="remove-mapping"
+                      >
+                        <template #icon><CloseOutlined /></template>
+                      </a-button>
+                    </div>
+                  </div>
+
+                  <!-- 拖拽提示和手动输入 -->
                   <div v-else class="drop-zone">
                     <InboxOutlined />
                     <span>{{ t('dragFieldHere') }}</span>
+                    <div class="manual-input-section">
+                      <a-divider>{{ t('or') }}</a-divider>
+                      <a-input
+                        v-model:value="input.manualInputValue"
+                        :placeholder="t('enterManualValue')"
+                        size="small"
+                        @press-enter="setManualValue(input)"
+                        @blur="setManualValue(input)"
+                      />
+                      <a-button
+                        type="primary"
+                        size="small"
+                        @click="setManualValue(input)"
+                        class="manual-input-btn"
+                      >
+                        {{ t('setValue') }}
+                      </a-button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -319,7 +361,7 @@
             <div class="custom-progress-inner" :style="{ width: executionProgress.percent + '%', background: executionProgress.strokeColor }"></div>
             <span class="custom-progress-text">{{ executionProgress.percent }}%</span>
           </div>
-          <div class="eta-row" v-if="isExecuting && executionProgress.processed > 0 && executionProgress.processed < executionProgress.total">
+          <div class="mb-2 eta-row" v-if="isExecuting && executionProgress.processed > 0 && executionProgress.processed < executionProgress.total">
             ⏳ {{ t('estimatedRemaining') }}: {{ estimatedRemainingText }}
           </div>
 
@@ -686,7 +728,7 @@ const canProceed = computed(() => {
     case 0:
       return batchData.value.length > 0
     case 1:
-      return state.inputs.some(input => input.valueMap)
+      return state.inputs.some(input => input.valueMap || input.manualValue !== undefined)
     default:
       return true
   }
@@ -818,7 +860,10 @@ async function init() {
       id: node.id,
       key: node.props.key,
       label: node.props.label,
-      valueMap: null
+      valueType: node.props.valueType || 'undefined',
+      valueMap: null,
+      manualValue: undefined,
+      manualInputValue: ''
     }
   })
 
@@ -1070,14 +1115,118 @@ function handleDragOver(event) {
 function handleDrop(event, input) {
   event.preventDefault()
   if (draggedField.value) {
-    input.valueMap = draggedField.value
-    draggedField.value = null
+    // 检查类型兼容性
+    if (isTypeCompatible(draggedField.value, input)) {
+      input.valueMap = draggedField.value
+      input.manualValue = undefined // 清除手动输入
+      input.manualInputValue = '' // 清除手动输入框
+      draggedField.value = null
+    } else {
+      // 类型不匹配时显示警告
+      showError('typeMismatchError', {
+        fieldName: draggedField.value.name,
+        fieldType: getFieldType(draggedField.value),
+        inputType: input.valueType
+      })
+    }
   }
 }
 
 // 移除映射
 function removeMapping(input) {
   input.valueMap = null
+}
+
+// 设置手动输入值
+function setManualValue(input) {
+  if (input.manualInputValue && input.manualInputValue.trim()) {
+    try {
+      // 根据目标类型进行转换
+      input.manualValue = convertValueByType(input.manualInputValue.trim(), input.valueType)
+      input.valueMap = null // 清除映射
+    } catch (error) {
+      showError('valueConversionError', {
+        value: input.manualInputValue,
+        targetType: input.valueType,
+        error: error.message
+      })
+    }
+  }
+}
+
+// 移除手动输入值
+function removeManualValue(input) {
+  input.manualValue = undefined
+  input.manualInputValue = ''
+}
+
+// 获取字段类型
+function getFieldType(field) {
+  if (batchData.value.length === 0) return 'unknown'
+
+  const firstItem = batchData.value[0]
+  const value = firstItem[field.key]
+  return Object.prototype.toString.call(value).slice(8, -1).toLowerCase()
+}
+
+// 检查类型兼容性
+function isTypeCompatible(field, input) {
+  const fieldType = getFieldType(field)
+  const targetType = input.valueType
+
+  // 类型兼容性映射
+  const typeCompatibility = {
+    'string': ['string'], // string只能映射到string
+    'number': ['number', 'string'], // number可以映射到number或string
+    'boolean': ['boolean', 'string'], // boolean可以映射到boolean或string
+    'object': ['object', 'string'], // object可以映射到object或string
+    'array': ['array', 'string'], // array可以映射到array或string
+    'null': ['string', 'number', 'boolean', 'object', 'array'], // null可以映射到任何类型
+    'undefined': ['string', 'number', 'boolean', 'object', 'array'] // undefined可以映射到任何类型
+  }
+
+  return typeCompatibility[fieldType]?.includes(targetType) || fieldType === targetType || targetType === 'undefined'
+}
+
+// 根据目标类型转换值
+function convertValueByType(value, targetType) {
+  switch (targetType) {
+    case 'string':
+      return String(value)
+
+    case 'number':
+      const num = Number(value)
+      if (isNaN(num)) {
+        throw new Error(`Cannot convert "${value}" to number`)
+      }
+      return num
+
+    case 'boolean':
+      if (typeof value === 'boolean') return value
+      const lowerValue = String(value).toLowerCase()
+      if (['true', '1', 'yes', 'on'].includes(lowerValue)) return true
+      if (['false', '0', 'no', 'off'].includes(lowerValue)) return false
+      throw new Error(`Cannot convert "${value}" to boolean`)
+
+    case 'object':
+      try {
+        return JSON.parse(value)
+      } catch {
+        throw new Error(`Cannot convert "${value}" to object`)
+      }
+
+    case 'array':
+      try {
+        const parsed = JSON.parse(value)
+        if (Array.isArray(parsed)) return parsed
+        throw new Error(`Value is not an array`)
+      } catch {
+        throw new Error(`Cannot convert "${value}" to array`)
+      }
+
+    default:
+      return value
+  }
 }
 
 // 步骤导航
@@ -1102,7 +1251,26 @@ function getPrompt(data) {
     }
   })
   state.inputs.forEach(node => {
-    prompt[node.id].inputs[node.key] = data[node.valueMap?.key] || prompt[node.id].inputs[node.key]
+    let value = prompt[node.id].inputs[node.key] // 默认值
+
+    if (node.valueMap) {
+      // 使用映射的字段值
+      const rawValue = data[node.valueMap.key]
+      if (rawValue !== undefined) {
+        try {
+          // 根据目标类型进行转换
+          value = convertValueByType(rawValue, node.valueType)
+        } catch (error) {
+          console.warn(`Type conversion failed for ${node.key}:`, error)
+          value = rawValue // 使用原始值作为后备
+        }
+      }
+    } else if (node.manualValue !== undefined) {
+      // 使用手动输入的值
+      value = node.manualValue
+    }
+
+    prompt[node.id].inputs[node.key] = value
   })
   return prompt
 }
@@ -1944,6 +2112,12 @@ watch(historyKey, (newKey) => {
         font-size: 0.9rem;
         color: #94a3b8;
       }
+
+      .field-type {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-style: italic;
+      }
     }
 
     .field-preview {
@@ -2042,6 +2216,12 @@ watch(historyKey, (newKey) => {
           font-size: 0.9rem;
           color: #94a3b8;
         }
+
+        .input-type {
+          font-size: 0.8rem;
+          color: #64748b;
+          font-style: italic;
+        }
       }
     }
 
@@ -2055,6 +2235,40 @@ watch(historyKey, (newKey) => {
         border: 1px solid rgba(16, 185, 129, 0.4);
         border-radius: 6px;
         color: #10b981;
+
+        .type-match {
+          color: #10b981;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+
+        .type-mismatch {
+          color: #f59e0b;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+
+        .remove-mapping {
+          margin-left: auto;
+          color: #ef4444;
+
+          &:hover {
+            background: rgba(239, 68, 68, 0.1);
+          }
+        }
+      }
+    }
+
+    .manual-input-display {
+      .manual-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(14, 165, 233, 0.2);
+        border: 1px solid rgba(14, 165, 233, 0.4);
+        border-radius: 6px;
+        color: #0ea5e9;
 
         .remove-mapping {
           margin-left: auto;
@@ -2075,12 +2289,51 @@ watch(historyKey, (newKey) => {
       gap: 8px;
       color: #94a3b8;
       font-size: 0.9rem;
-      height: 60px;
       border: 2px dashed rgba(56, 70, 102, 0.4);
       border-radius: 6px;
 
       .anticon {
         font-size: 1.5rem;
+      }
+
+      .manual-input-section {
+        width: 100%;
+        margin-top: 8px;
+
+        :deep(.ant-divider) {
+          color: #64748b;
+          font-size: 0.8rem;
+          margin: 8px 0;
+        }
+
+        .ant-input {
+          background: rgba(15, 23, 42, 0.6);
+          border-color: rgba(56, 70, 102, 0.6);
+          color: #e2e8f0;
+          margin-bottom: 8px;
+
+          &:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+          }
+
+          &::placeholder {
+            color: #64748b;
+          }
+        }
+
+        .manual-input-btn {
+          width: 100%;
+          background: rgba(14, 165, 233, 0.2);
+          border-color: rgba(14, 165, 233, 0.4);
+          color: #0ea5e9;
+
+          &:hover {
+            background: rgba(14, 165, 233, 0.3);
+            border-color: rgba(14, 165, 233, 0.6);
+            color: #0ea5e9;
+          }
+        }
       }
     }
   }
