@@ -159,6 +159,8 @@ const translations = {
     openPluginsFolder: '打开插件文件夹',
     openModelsFolder: '打开模型文件夹',
     openFolderError: '打开文件夹失败',
+    openPythonVenv: '打开Python命令行',
+    openCMDError: '打开命令行失败',
 
     // 错误和状态
     requestFail: '请求失败',
@@ -762,6 +764,8 @@ const translations = {
     openPluginsFolder: 'Open Plugins Folder',
     openModelsFolder: 'Open Models Folder',
     openFolderError: 'Failed to open folder',
+    openPythonVenv: 'Open Python Venv',
+    openCMDError: 'Failed to open cmd',
 
     // 错误和状态
     requestFail: 'Request failed',

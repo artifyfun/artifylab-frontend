@@ -370,22 +370,21 @@
                         </div>
                       </div>
                     </div>
-
-                    <!-- 导出/导入应用功能 -->
-                    <div class="flex gap-2 mt-6">
-                      <button
-                        @click="exportApps"
-                        class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 from-tech-blue to-tech-cyan hover:opacity-90"
-                      >
-                        <i class="mr-2 fas fa-download"></i>{{ t('exportApps') }}
-                      </button>
-                      <label
-                        class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 cursor-pointer from-tech-cyan to-tech-blue hover:opacity-90"
-                      >
-                        <i class="mr-2 fas fa-upload"></i>{{ t('importApps') }}
-                        <input type="file" accept=".json" class="hidden" @change="importApps" />
-                      </label>
-                    </div>
+                  </div>
+                  <!-- 导出/导入应用功能 -->
+                  <div class="flex gap-2 mt-6">
+                    <button
+                      @click="exportApps"
+                      class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 from-tech-blue to-tech-cyan hover:opacity-90"
+                    >
+                      <i class="mr-2 fas fa-download"></i>{{ t('exportApps') }}
+                    </button>
+                    <label
+                      class="flex relative flex-1 justify-center items-center px-4 py-2.5 text-white bg-gradient-to-r rounded-lg transition-all duration-300 cursor-pointer from-tech-cyan to-tech-blue hover:opacity-90"
+                    >
+                      <i class="mr-2 fas fa-upload"></i>{{ t('importApps') }}
+                      <input type="file" accept=".json" class="hidden" @change="importApps" />
+                    </label>
                   </div>
                 </div>
               </div>
@@ -432,6 +431,13 @@
                     >
                       <i class="mr-3 text-xl fas fa-cube"></i>
                       <span>{{ t('openModelsFolder') }}</span>
+                    </button>
+                    <button
+                      @click="openCMD('python')"
+                      class="flex items-center px-4 py-3 text-white bg-gradient-to-r rounded-lg transition-all duration-300 from-tech-blue to-tech-cyan hover:opacity-90 hover:shadow-lg hover:shadow-tech-cyan/20"
+                    >
+                      <i class="mr-3 text-xl fa-brands fa-python"></i>
+                      <span>{{ t('openPythonVenv') }}</span>
                     </button>
                   </div>
                 </div>
@@ -680,7 +686,7 @@ const exportApps = async () => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `artifylab-apps-(${data.length})-${new Date().toLocaleDateString()}.json`
+  a.download = `artifylab-apps-[${data.length}]-${new Date().toLocaleDateString()}.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -751,6 +757,19 @@ const openRootFolder = async (path) => {
   } catch (error) {
     console.error('打开目录失败:', error)
     showError('openFolderError')
+  }
+}
+
+const openCMD = async (type) => {
+  try {
+    if (window.electronAPI) {
+      await window.electronAPI.ArtifyLab.openCMD(type)
+    } else {
+      showError('electronNotAvailable')
+    }
+  } catch (error) {
+    console.error('打开命令行失败:', error)
+    showError('openCMDError')
   }
 }
 

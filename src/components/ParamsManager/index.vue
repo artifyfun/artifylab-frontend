@@ -9,10 +9,11 @@
       :loading="state.tableLoading"
       show-overflow
       :column-config="{ resizable: true }"
-      :row-config="{ isCurrent: true, isHover: true }"
+      :row-config="{ isCurrent: true, isHover: true, drag: true }"
       :scroll-y="{ enabled: true, gt: 0 }"
       :edit-config="{ trigger: 'manual', mode: 'row' }"
       @cell-click="focusNode"
+      @row-dragend="handleSortChange"
     >
       <vxe-column v-for="item in state.columns" :key="item.field" v-bind="item">
         <template #default="{ row }">
@@ -114,6 +115,7 @@ const state = reactive({
       showOverflow: false,
       width: 200,
       fixed: 'right',
+      dragSort: true,
     },
     {
       field: 'renderComponent',
@@ -149,6 +151,11 @@ const updateParamsNodes = (nodes) => {
 
 const removeParams = (node) => {
   const nodes = props.paramsNodes.filter((item) => item !== node)
+  updateParamsNodes(nodes)
+}
+
+const handleSortChange = () => {
+  const nodes = tableRef.value.getFullData()
   updateParamsNodes(nodes)
 }
 
