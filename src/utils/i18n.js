@@ -161,6 +161,9 @@ const translations = {
     openFolderError: '打开文件夹失败',
     openPythonVenv: '打开Python命令行',
     openCMDError: '打开命令行失败',
+    executeInTerminal: '将以下指令复制到命令行执行',
+    copyCommand: '复制指令',
+    paste: '粘贴',
 
     // 错误和状态
     requestFail: '请求失败',
@@ -766,6 +769,9 @@ const translations = {
     openFolderError: 'Failed to open folder',
     openPythonVenv: 'Open Python Venv',
     openCMDError: 'Failed to open cmd',
+    executeInTerminal: 'Copy the following command to your terminal',
+    copyCommand: 'Copy Command',
+    paste: 'Paste',
 
     // 错误和状态
     requestFail: 'Request failed',

@@ -439,6 +439,33 @@
                       <i class="mr-3 text-xl fa-brands fa-python"></i>
                       <span>{{ t('openPythonVenv') }}</span>
                     </button>
+                    <div
+                      v-if="cmdHintVisible && cmdText"
+                      class="p-3 mt-2 text-xs text-cyan-300 rounded-lg border bg-cyan-500/10 border-cyan-500/30"
+                    >
+                      <div class="flex justify-between items-start">
+                        <div class="flex-1 mr-2">
+                          <div class="mb-1">{{ t('executeInTerminal') }}</div>
+                          <code class="block p-2 text-[11px] leading-4 rounded bg-black/30 text-cyan-200 break-all">{{ cmdText }}</code>
+                        </div>
+                        <button
+                          class="ml-2 text-cyan-400 hover:text-cyan-200"
+                          @click="cmdHintVisible = false"
+                          aria-label="close"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                      <div class="flex gap-2 mt-2">
+                        <button
+                          @click="copyCmd"
+                          class="px-3 py-1 text-[11px] text-white bg-gradient-to-r from-tech-blue to-tech-cyan rounded hover:opacity-90 hover:shadow hover:shadow-tech-cyan/20"
+                        >
+                          {{ t('copyCommand') }}
+                        </button>
+                        <div class="self-center text-[11px] opacity-80">{{ t('copy') }} → {{ t('paste') || 'Paste' }} → Enter</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -477,6 +504,19 @@ const tabs = [
 const activeTab = ref('base')
 
 const showApiKey = ref(false)
+// openCMD 提示
+const cmdHintVisible = ref(false)
+const cmdText = ref('')
+
+const copyCmd = async () => {
+  if (!cmdText.value) return
+  try {
+    await navigator.clipboard.writeText(cmdText.value)
+    showSuccess('copySuccess')
+  } catch (e) {
+    showError('copyFailed')
+  }
+}
 const showNgrokToken = ref(false)
 const isTesting = ref(false)
 const testResult = ref(null)
@@ -763,7 +803,21 @@ const openRootFolder = async (path) => {
 const openCMD = async (type) => {
   try {
     if (window.electronAPI) {
-      await window.electronAPI.ArtifyLab.openCMD(type)
+      const { cmd } = await window.electronAPI.ArtifyLab.openCMD(type)
+      if (cmd) {
+        cmdText.value = cmd
+        cmdHintVisible.value = true
+        try {
+          await navigator.clipboard.writeText(cmd)
+          showSuccess('copySuccess')
+        } catch (e) {
+          // ignore clipboard failure here
+        }
+        // 自动收起
+        setTimeout(() => {
+          cmdHintVisible.value = false
+        }, 8000)
+      }
     } else {
       showError('electronNotAvailable')
     }
