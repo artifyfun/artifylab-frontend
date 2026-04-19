@@ -570,13 +570,18 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
                   )
                 } else {
                   const color = getRandomColor()
+                  // Store essential data plus parent's enriched fields
                   paramsNodes.push({
-                    ...node,
-                    graph: undefined,
+                    id: node.id,
+                    type: node.type, // needed for getRenderComponent
                     color,
                     category: 'input',
                     name: widget.name,
-                    selectedWidget: widget,
+                    selectedWidget: { name: widget.name, type: widget.type },
+                    // These will be filled by parent's handleMessage
+                    description: '',
+                    renderComponent: '',
+                    key: '',
                   })
                 }
                 eventBus.send(
@@ -605,19 +610,23 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
       has_submenu: false,
       callback: () => {
         if (isSelected) {
-          const index = paramsNodes.findIndex(
-            (item) => item.id === node.id && item.selectedWidget.id === node.id,
+          paramsNodes = paramsNodes.filter(
+            (item) => item.id !== node.id || item.category !== 'output',
           )
-          paramsNodes.splice(index, 1)
         } else {
           const color = getRandomColor()
+          // Store essential data plus parent's enriched fields
           paramsNodes.push({
-            ...node,
-            graph: undefined,
+            id: node.id,
+            type: node.type, // needed for getRenderComponent
             color,
             category: 'output',
             name: node.title,
-            selectedWidget: { ...node, graph: undefined },
+            selectedWidget: { id: node.id },
+            // These will be filled by parent's handleMessage
+            description: '',
+            renderComponent: '',
+            key: '',
           })
         }
         eventBus.send(
