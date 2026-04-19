@@ -247,7 +247,7 @@ const handleChange = async ({ file }) => {
       workflow = data
     }
   } catch (e) {
-    console.log(e)
+    console.error(e)
   }
   if (!workflow) {
     handleError(t('cannotReadWorkflowInfo'))

@@ -104,17 +104,9 @@ window.addEventListener('load', function () {
       } else {
         // Wait for window.app to be set (GraphView mounts after version check)
         setTimeout(() => {
-          console.log('[ArtifyInject] Timeout fired, about to call handleComfyuiContext')
           handleComfyuiContext(() => {
-            // Only send onload AFTER eventBus.on is registered
-            console.log('[ArtifyInject] About to send onload message')
             const message = JSON.stringify({ eventType: 'onload' })
             window.parent.postMessage(message, '*')
-            console.log('[ArtifyInject] ComfyUI ready (readonly mode), onload sent at', Date.now())
-            // Wait a bit and check if we received any messages
-            setTimeout(() => {
-              console.log('[ArtifyInject] Still no messages received after onload')
-            }, 2000)
           })
         }, 500)
       }
@@ -224,7 +216,6 @@ function handleComfyuiContext(onReady) {
 }
 
 function doHandleComfyuiContext(app, LiteGraph, onReady) {
-  console.log('[ArtifyInject] doHandleComfyuiContext START')
   // Known ArtifyLab event types - only process these
   const ARTIFY_EVENT_TYPES = ['updateParamsNodes', 'centerOnNode', 'loadGraphData', 'updatePrompt']
 
@@ -235,19 +226,10 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
     },
     on: (cb) => {
       eventBus.callbacks.push(cb)
-      console.log(
-        '[ArtifyInject] eventBus.on registered, total callbacks:',
-        eventBus.callbacks.length,
-      )
     },
   }
 
-  console.log('[ArtifyInject] About to register window.addEventListener("message")')
   window.addEventListener('message', (event) => {
-    console.log('[ArtifyInject] ===== Message received =====')
-    console.log('[ArtifyInject] origin:', event.origin)
-    console.log('[ArtifyInject] data type:', typeof event.data)
-    console.log('[ArtifyInject] data:', event.data)
     // Only process messages that are ArtifyLab messages
     let data = event.data
 
@@ -256,31 +238,17 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
     if (typeof data === 'string') {
       try {
         data = JSON.parse(data)
-        console.log('[ArtifyInject] Parsed string to object:', data)
       } catch {
         // Not valid JSON, ignore
-        console.log('[ArtifyInject] String not valid JSON, ignoring')
         return
       }
     }
 
-    console.log(
-      '[ArtifyInject] Checking eventType:',
-      data && data.eventType,
-      'in',
-      ARTIFY_EVENT_TYPES,
-    )
     // Only process if it's our message format
     if (data && data.eventType && ARTIFY_EVENT_TYPES.includes(data.eventType)) {
-      console.log(
-        '[ArtifyInject] Matched! Calling callbacks, callback count:',
-        eventBus.callbacks.length,
-      )
       for (const i in eventBus.callbacks) {
         eventBus.callbacks[i](data)
       }
-    } else {
-      console.log('[ArtifyInject] NOT matched - eventType or ARTIFY_EVENT_TYPES issue')
     }
   })
 
@@ -294,14 +262,6 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
   app.canvas.drawNodeShape = function (node, ctx, size, fgcolor, bgcolor, selected) {
     const isSelected = paramsNodes.some((item) => item.id === node.id)
     const outputNode = paramsNodes.find((item) => item.id === node.id && item.category === 'output')
-    if (outputNode) {
-      console.log(`[ArtifyInject] Node ${node.id}: matched outputNode, color=${outputNode.color}`)
-    } else if (paramsNodes.some((item) => item.id === node.id)) {
-      const item = paramsNodes.find((item) => item.id === node.id)
-      console.log(
-        `[ArtifyInject] Node ${node.id}: found in paramsNodes but category=${item.category} not "output"`,
-      )
-    }
     fgcolor = outputNode ? outputNode.color : fgcolor
     bgcolor = outputNode ? outputNode.color : bgcolor
     selected = isSelected
@@ -333,14 +293,6 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
       const inputNode = paramsNodes.find((item) => item.id === node.id && item.category === 'input')
       if (inputNode) {
         background_color = inputNode.color
-        console.log(
-          `[ArtifyInject] Widget ${w.name} on node ${node.id}: matched inputNode, color=${inputNode.color}`,
-        )
-      } else if (paramsNodes.some((item) => item.id === node.id)) {
-        const item = paramsNodes.find((item) => item.id === node.id)
-        console.log(
-          `[ArtifyInject] Widget ${w.name} on node ${node.id}: found in paramsNodes but category=${item.category} not "input"`,
-        )
       } else {
         // Then check for specific widget match
         const current = paramsNodes.find(
@@ -660,20 +612,6 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
     const { eventType, data } = msgData
     if (eventType === 'updateParamsNodes') {
       paramsNodes = data
-      console.log('[ArtifyInject] updateParamsNodes received:', paramsNodes.length, 'nodes')
-      paramsNodes.forEach((n) => {
-        console.log(
-          `  Node ${n.id}: category=${n.category}, color=${n.color}, name=${n.name}, selectedWidget=`,
-          n.selectedWidget,
-        )
-      })
-      // Debug: check if nodes exist in graph
-      if (app && app.graph) {
-        paramsNodes.forEach((n) => {
-          const node = app.graph.getNodeById(n.id)
-          console.log(`  Graph node ${n.id}:`, node ? 'found' : 'NOT FOUND')
-        })
-      }
       eventBus.send(
         stringify({
           eventType: 'updateParamsNodes',
@@ -708,10 +646,8 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
     }
   })
 
-  console.log('[ArtifyInject] ComfyUI context initialized')
   // Now notify parent that we're ready (eventBus.on is registered)
   if (onReady) {
-    console.log('[ArtifyInject] Calling onReady callback')
     onReady()
   }
 }
