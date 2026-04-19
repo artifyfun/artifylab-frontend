@@ -73,7 +73,9 @@ const updateParamsNodes = (paramsNodes) => {
 }
 
 const handleMessage = (event) => {
+  console.log('[Parent] handleMessage called, origin:', event.origin, 'data:', event.data)
   const { eventType, data } = JSON.parse(event.data)
+  console.log('[Parent] eventType:', eventType)
   if (eventType === 'updateParamsNodes') {
     const paramsNodes = data.map((node) => {
       return {
