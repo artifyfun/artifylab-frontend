@@ -2,13 +2,8 @@ const artify_inject = getQueryParam("artify_inject");
 
 const isElectron = !!window.electronAPI;
 
-// if (artify_inject !== "readonly") {
-//   loadWorkflow()
-// }
-
 window.addEventListener("load", function () {
   let timer = null;
-  const global = window;
 
   if (artify_inject === "readonly") {
     loadCssCode(
@@ -50,46 +45,52 @@ window.addEventListener("load", function () {
           display: none !important;
         }
       `,
-      global
+      window
     );
   }
 
   let counter = 0;
-  function loop() {
+
+  function checkComfyUIReady() {
     counter++;
     clearTimeout(timer);
-    if (counter > 100) {
+
+    if (counter > 200) {
+      console.warn('[ArtifyInject] Timeout waiting for ComfyUI');
       return;
     }
-    timer = setTimeout(() => {
-      const { LGraph, app } = global;
-      if (LGraph && app) {
-        if (artify_inject !== "readonly") {
-          setButton()
-          loadWorkflow(app)
-          // loadCssCode(
-          //   `.comfyui-body-top {
-          //       display: none !important;
-          //     }
-          //   `,
-          //   global
-          // );
-          return
-        }
 
-        handleComfyuiContext(global);
-        console.log(global);
-        const message = JSON.stringify({
-          eventType: "onload",
-        });
-        window.parent.postMessage(message, "*");
+    // ComfyUI 0.19+ sets __COMFYUI_FRONTEND_VERSION__ when initialized
+    // Also check for Vue app being mounted (has child nodes)
+    const vueApp = document.querySelector('#vue-app');
+    const hasVueApp = vueApp && vueApp.childNodes.length > 0;
+    const hasVersion = typeof window.__COMFYUI_FRONTEND_VERSION__ !== 'undefined';
+    const hasLiteGraph = document.body && document.body.classList.contains('litegraph');
+
+    if (hasVersion || (hasVueApp && hasLiteGraph)) {
+      if (artify_inject !== "readonly") {
+        // Wait a bit more for the graph to fully initialize
+        setTimeout(() => {
+          setButton();
+          loadWorkflow();
+        }, 500);
       } else {
-        loop();
+        // Wait for window.app to be set (GraphView mounts after version check)
+        setTimeout(() => {
+          handleComfyuiContext();
+          // Notify parent that ComfyUI is ready
+          const message = JSON.stringify({ eventType: "onload" });
+          window.parent.postMessage(message, "*");
+          console.log('[ArtifyInject] ComfyUI ready (readonly mode)');
+        }, 500);
       }
-    }, 100);
+      return;
+    }
+
+    timer = setTimeout(checkComfyUIReady, 100);
   }
 
-  loop();
+  checkComfyUIReady();
 });
 
 function uuidv4() {
@@ -132,8 +133,8 @@ function stringify(obj, replacer, spaces, cycleReplacer) {
   return JSON.stringify(obj, serializer(replacer, cycleReplacer), spaces);
 }
 
-function loadCssCode(code, window) {
-  const { document } = window;
+function loadCssCode(code, win) {
+  const { document } = win;
   const style = document.createElement("style");
   style.type = "text/css";
   style.rel = "stylesheet";
@@ -142,7 +143,57 @@ function loadCssCode(code, window) {
   head.appendChild(style);
 }
 
-function handleComfyuiContext(window) {
+function getComfyUIApp() {
+  // Try window.app first (set by ComfyUI after GraphView mounts)
+  let app = window.app;
+
+  // Try Vue internal - __vue_app__ on the mounted element
+  if (!app) {
+    const vueAppEl = document.querySelector('#vue-app');
+    if (vueAppEl && vueAppEl.__vue_app__) {
+      // Vue 3 app instance - the actual app is usually the root component
+      const vueApp = vueAppEl.__vue_app__;
+      // Try to get the app from the root component
+      if (vueApp._instance) {
+        app = vueApp._instance.proxy;
+      }
+    }
+  }
+
+  // Try to get LiteGraph/LGraph from window (always set by ComfyUI)
+  let LiteGraph = window.LiteGraph || window.LGraph;
+  if (!LiteGraph) {
+    for (const key of Object.keys(window)) {
+      if (key === 'LiteGraph' || key === 'LGraph') {
+        LiteGraph = window[key];
+        break;
+      }
+    }
+  }
+
+  return { app, LiteGraph };
+}
+
+function handleComfyuiContext() {
+  const { app, LiteGraph } = getComfyUIApp();
+
+  if (!app || !LiteGraph) {
+    // Retry after a short delay - window.app might not be set yet
+    setTimeout(() => {
+      const { app: retryApp, LiteGraph: retryLiteGraph } = getComfyUIApp();
+      if (!retryApp || !retryLiteGraph) {
+        console.warn('[ArtifyInject] Could not find ComfyUI app instance after retry');
+        return;
+      }
+      doHandleComfyuiContext(retryApp, retryLiteGraph);
+    }, 1000);
+    return;
+  }
+
+  doHandleComfyuiContext(app, LiteGraph);
+}
+
+function doHandleComfyuiContext(app, LiteGraph) {
   const eventBus = {
     callbacks: [],
     send: (message) => {
@@ -159,16 +210,9 @@ function handleComfyuiContext(window) {
     }
   });
 
-  const { app, LiteGraph } = window;
-
   app.canvas.allow_dragnodes = false;
   app.canvas.allow_reconnect_links = false;
   app.canvas.allow_searchbox = false;
-  // app.canvas.read_only = true
-  app.ui.menuContainer.click();
-  app.ui.menuContainer.style.display = "none";
-  app.ui.menuContainer.remove();
-
   app.handleFile = () => { };
 
   let paramsNodes = [];
@@ -207,14 +251,14 @@ function handleComfyuiContext(window) {
     const width = node.size[0];
     const widgets = node.widgets;
     posY += 2;
-    const H = LiteGraph.NODE_WIDGET_HEIGHT;
+    const H = (LiteGraph || window.LiteGraph || window.LGraph).NODE_WIDGET_HEIGHT;
     const show_text = this.ds.scale > 0.5;
     ctx.save();
     ctx.globalAlpha = this.editor_alpha;
-    const outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
-    let background_color = LiteGraph.WIDGET_BGCOLOR;
-    const text_color = LiteGraph.WIDGET_TEXT_COLOR;
-    const secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
+    const outline_color = (LiteGraph || window.LiteGraph || window.LGraph).WIDGET_OUTLINE_COLOR;
+    let background_color = (LiteGraph || window.LiteGraph || window.LGraph).WIDGET_BGCOLOR;
+    const text_color = (LiteGraph || window.LiteGraph || window.LGraph).WIDGET_TEXT_COLOR;
+    const secondary_text_color = (LiteGraph || window.LiteGraph || window.LGraph).WIDGET_SECONDARY_TEXT_COLOR;
     const margin = 15;
 
     for (let i = 0; i < widgets.length; ++i) {
@@ -225,7 +269,7 @@ function handleComfyuiContext(window) {
       if (current) {
         background_color = current.color;
       } else {
-        background_color = LiteGraph.WIDGET_BGCOLOR;
+        background_color = (LiteGraph || window.LiteGraph || window.LGraph).WIDGET_BGCOLOR;
       }
       let y = posY;
       if (w.y) {
@@ -235,7 +279,6 @@ function handleComfyuiContext(window) {
       ctx.strokeStyle = outline_color;
       ctx.fillStyle = "#222";
       ctx.textAlign = "left";
-      //ctx.lineWidth = 2;
       if (w.disabled) ctx.globalAlpha *= 0.5;
       const widget_width = w.width || width;
 
@@ -410,8 +453,6 @@ function handleComfyuiContext(window) {
             ctx.beginPath();
             ctx.rect(margin, y, widget_width - margin * 2, H);
             ctx.clip();
-
-            //ctx.stroke();
             ctx.fillStyle = secondary_text_color;
             const label = w.label || w.name;
             if (label != null) {
@@ -423,7 +464,7 @@ function handleComfyuiContext(window) {
               String(w.value).substr(0, 30),
               widget_width - margin * 2,
               y + H * 0.7
-            ); //30 chars max
+            );
             ctx.restore();
           }
           break;
@@ -589,6 +630,8 @@ function handleComfyuiContext(window) {
       );
     }
   });
+
+  console.log('[ArtifyInject] ComfyUI context initialized');
 }
 
 function getQueryParam(key) {
@@ -597,7 +640,6 @@ function getQueryParam(key) {
 }
 
 function setButton() {
-  // 创建浮动按钮的样式
   const style = document.createElement('style');
   style.innerHTML = `
       #floating-btn {
@@ -617,7 +659,7 @@ function setButton() {
           align-items: center;
           justify-content: center;
           transition: all 0.3s ease;
-          z-index: 10000; /* 确保在最上层 */
+          z-index: 10000;
       }
 
       #floating-btn:hover {
@@ -635,93 +677,95 @@ function setButton() {
       }
   `;
   document.head.appendChild(style);
-  // 创建按钮元素
   const floatingBtn = document.createElement('button');
   floatingBtn.id = 'floating-btn';
   floatingBtn.title = 'ArtifyLab';
   floatingBtn.ariaLabel = 'ArtifyLab';
-
-  // 添加到body
   document.body.appendChild(floatingBtn);
 
-  // 点击事件处理
   floatingBtn.addEventListener('click', () => {
-    window.electronAPI.ArtifyLab.loadArtifyLab()
+    window.electronAPI.ArtifyLab.loadArtifyLab();
   });
 }
 
 async function getElectronConfig() {
-  let config
+  let config;
   try {
-    config = await window.electronAPI.ArtifyLab.getConfig()
+    config = await window.electronAPI.ArtifyLab.getConfig();
   } catch (_e) {
-    // console.log(_e)
+    // Ignore errors
   }
-  return config
+  return config;
 }
 
-// API 请求工具函数
 async function apiRequest(endpoint, options = {}) {
-  let baseUrl
+  let baseUrl;
   if (isElectron) {
-    const electronConfig = await getElectronConfig()
-    baseUrl = electronConfig.server_origin
+    const electronConfig = await getElectronConfig();
+    baseUrl = electronConfig.server_origin;
   } else if (getQueryParam('server_origin')) {
-    baseUrl = getQueryParam('server_origin')
+    baseUrl = getQueryParam('server_origin');
   } else {
-    baseUrl = config.value.serverHost
+    baseUrl = 'http://localhost:3000';
   }
 
   const defaultOptions = {
     headers: {
       'Content-Type': 'application/json',
     },
-  }
+  };
 
   const response = await fetch(`${baseUrl}${endpoint}`, {
     ...defaultOptions,
     ...options,
-  })
+  });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Request failed' }))
-    throw new Error(errorData.message || `HTTP ${response.status}`)
+    const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
+    throw new Error(errorData.message || `HTTP ${response.status}`);
   }
 
-  return response.json()
+  return response.json();
 }
 
-// 根据ID获取应用 - 调用后端接口
 async function getAppById(appId) {
   const response = await apiRequest(`/api/apps/detail`, {
     method: 'post',
     body: JSON.stringify({
       id: appId
     })
-  })
+  });
   if (response.ok) {
-    return response.data
+    return response.data;
   }
 }
 
 async function getConfig() {
   const response = await apiRequest(`/api/config`, {
     method: 'post',
-  })
+  });
   if (response.ok) {
-    return response.data
+    return response.data;
   }
 }
 
-async function loadWorkflow(app) {
-  const config = await getConfig()
-  if (!config.activeAppId) {
-    return
+async function loadWorkflow() {
+  const { app } = getComfyUIApp();
+
+  if (!app || !app.loadGraphData) {
+    // Wait a bit more for app to be ready
+    setTimeout(() => loadWorkflow(), 500);
+    return;
   }
-  const currentApp = await getAppById(config.activeAppId)
+
+  const config = await getConfig();
+  if (!config || !config.activeAppId) {
+    return;
+  }
+  const currentApp = await getAppById(config.activeAppId);
   if (!currentApp) {
-    return
+    return;
   }
-  const { workflow } = currentApp.template
+  const { workflow } = currentApp.template;
   await app.loadGraphData(workflow);
 }
