@@ -1,6 +1,52 @@
 const artify_inject = getQueryParam('artify_inject')
-
 const isElectron = !!window.electronAPI
+const isIframe = (function () {
+  try {
+    return window.self !== window.top
+  } catch (e) {
+    return true
+  }
+})()
+const artify_playground = getQueryParam('artify_playground') === 'true'
+let isArtifyLoading = false
+
+// Prevent ComfyUI from restoring previous session tabs or graphs in playground/readonly mode
+if (artify_inject === 'readonly' || window.self !== window.top || artify_playground) {
+  try {
+    const keysToClear = [
+      'Comfy.App.Graph',
+      'Comfy.WorkflowManager.Workflows',
+      'Comfy.WorkflowManager.ActiveWorkflow',
+      'Comfy.LastWorkflow',
+      'comfy_workflow_states',
+      'comfy.workflow.manager.workflows',
+      'comfy.workflow.manager.activeWorkflow',
+    ]
+    keysToClear.forEach((key) => {
+      localStorage.removeItem(key)
+      sessionStorage.removeItem(key)
+    })
+
+    // Sabotage localStorage.getItem/setItem to prevent any late-loading extensions from restoring session
+    const originalGetItem = window.localStorage.getItem
+    window.localStorage.getItem = function (key) {
+      if (
+        key &&
+        (key.includes('WorkflowManager') ||
+          key.includes('Comfy.App.Graph') ||
+          key.includes('Comfy.LastWorkflow') ||
+          key.includes('comfy_workflow_states'))
+      ) {
+        return null
+      }
+      return originalGetItem.apply(this, arguments)
+    }
+
+    console.log('[ArtifyInject] Sabotaged ComfyUI session restoration to prevent tab auto-switch')
+  } catch (e) {
+    // Ignore storage errors
+  }
+}
 
 window.addEventListener('load', function () {
   let timer = null
@@ -92,23 +138,28 @@ window.addEventListener('load', function () {
     const vueApp = document.querySelector('#vue-app')
     const hasVueApp = vueApp && vueApp.childNodes.length > 0
     const hasVersion = typeof window.__COMFYUI_FRONTEND_VERSION__ !== 'undefined'
-    const hasLiteGraph = document.body && document.body.classList.contains('litegraph')
+    const hasLiteGraph = !!window.LiteGraph
+    const nodeTypesCount = hasLiteGraph ? Object.keys(window.LiteGraph.registered_node_types || {}).length : 0
+    // Wait for at least 50 node types (standard ComfyUI has many more once extensions load)
+    const isFullyReady = hasVersion || (hasLiteGraph && nodeTypesCount > 50)
 
-    if (hasVersion || (hasVueApp && hasLiteGraph)) {
-      if (artify_inject !== 'readonly') {
-        // Wait a bit more for the graph to fully initialize
-        setTimeout(() => {
-          setButton()
-          loadWorkflow()
-        }, 500)
-      } else {
-        // Wait for window.app to be set (GraphView mounts after version check)
+    if (isFullyReady && window.app && window.app.graph) {
+      if (artify_inject === 'readonly' || isIframe || artify_playground) {
+        // Playground mode (in iframe/playground): Wait for all extensions to finish registration
+        console.log(`[ArtifyInject] Playground mode detected (Node types: ${nodeTypesCount}), waiting for stability...`)
         setTimeout(() => {
           handleComfyuiContext(() => {
             const message = JSON.stringify({ eventType: 'onload' })
             window.parent.postMessage(message, '*')
           })
-        }, 500)
+        }, 1000)
+      } else {
+        // Standalone mode: Load the active app workflow automatically
+        handleComfyuiContext(() => {
+          console.log('[ArtifyInject] Standalone mode detected, loading default workflow')
+          setButton()
+          loadWorkflow()
+        })
       }
       return
     }
@@ -219,6 +270,18 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
   // Known ArtifyLab event types - only process these
   const ARTIFY_EVENT_TYPES = ['updateParamsNodes', 'centerOnNode', 'loadGraphData', 'updatePrompt']
 
+  // Protect loadGraphData from being called by ComfyUI's internal restoration
+  const originalLoadGraphData = app.loadGraphData
+  if (originalLoadGraphData) {
+    app.loadGraphData = async function (data, ...args) {
+      if (!isArtifyLoading && (artify_inject === 'readonly' || isIframe || artify_playground)) {
+        console.log('[ArtifyInject] Blocked external/internal loadGraphData call to keep playground state')
+        return
+      }
+      return originalLoadGraphData.apply(this, [data, ...args])
+    }
+  }
+
   const eventBus = {
     callbacks: [],
     send: (message) => {
@@ -255,7 +318,50 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
   app.canvas.allow_dragnodes = false
   app.canvas.allow_reconnect_links = false
   app.canvas.allow_searchbox = false
-  app.handleFile = () => {}
+  app.handleFile = () => { }
+
+  // Prevent multi-tab/workflow manager from switching tabs or restoring sessions in playground mode
+  if (app.ui && app.ui.workflowManager && (artify_inject === 'readonly' || isIframe || artify_playground)) {
+    try {
+      const manager = app.ui.workflowManager
+
+      // Disable tab restoration settings if possible
+      if (app.ui.settings) {
+        try {
+          app.ui.settings.setFieldValue('Comfy.WorkflowManager.TabRestoration', false)
+          app.ui.settings.setFieldValue('Comfy.Workflows.TabRestoration', false)
+        } catch (e) {
+          /* ignore */
+        }
+      }
+
+      // Disable the tab switching method
+      const originalSwitch = manager.switchToWorkflow
+      if (typeof originalSwitch === 'function') {
+        manager.switchToWorkflow = function () {
+          console.log('[ArtifyInject] Blocked workflow/tab switch in playground mode')
+          return
+        }
+      }
+
+      // Hack: Force only one workflow to exist and be active
+      // We do this by intercepting the workflows array if possible, or just clearing it
+      if (manager.workflows && manager.workflows.length > 1) {
+        console.log('[ArtifyInject] Cleaning up extra workflows...')
+        // Try to close others. manager.closeWorkflow often works.
+        const workflowsToClose = [...manager.workflows].slice(1)
+        workflowsToClose.forEach((w) => {
+          try {
+            manager.closeWorkflow(w.id)
+          } catch (err) {
+            /* ignore */
+          }
+        })
+      }
+    } catch (e) {
+      console.warn('[ArtifyInject] Failed to patch workflowManager:', e)
+    }
+  }
 
   let paramsNodes = []
   const origin_drawNodeShape = app.canvas.drawNodeShape
@@ -387,9 +493,9 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
             ctx.fillStyle = text_color
             ctx.fillText(
               w.label ||
-                `${w.name}  ${Number(w.value).toFixed(
-                  w.options.precision != null ? w.options.precision : 3,
-                )}`,
+              `${w.name}  ${Number(w.value).toFixed(
+                w.options.precision != null ? w.options.precision : 3,
+              )}`,
               widget_width * 0.5,
               y + H * 0.7,
             )
@@ -598,6 +704,7 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
   app.canvas.getCanvasMenuOptions = () => []
 
   app.canvas.centerOnNode = function (node) {
+    if (!node) return
     const parent = this.canvas.parentNode
     const width = parent.offsetWidth
     const height = parent.offsetHeight
@@ -624,10 +731,49 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
       app.canvas.centerOnNode(node)
     }
     if (eventType === 'loadGraphData') {
-      await app.loadGraphData(data)
+      const workflowName = msgData.name || 'ArtifyLab Workflow'
+      console.log('[ArtifyInject] Processing loadGraphData, target name:', workflowName)
+      isArtifyLoading = true
+      try {
+        if (data && typeof data === 'object') {
+          data.name = workflowName
+          data.extra_data = data.extra_data || {}
+          data.extra_data.workflow_name = workflowName
+        }
+
+        await app.loadGraphData(data)
+
+        // Force various name properties
+        if (app.graph) app.graph.name = workflowName
+        app.last_loaded_file = workflowName
+        if (app.ui && app.ui.workflowManager && app.ui.workflowManager.activeWorkflow && (artify_playground || isIframe)) {
+          const active = app.ui.workflowManager.activeWorkflow
+          active.name = workflowName
+          if (typeof active.rename === 'function') active.rename(workflowName)
+          if (typeof app.ui.workflowManager.refresh === 'function') app.ui.workflowManager.refresh()
+        }
+      } finally {
+        isArtifyLoading = false
+      }
+
+      // Stronger persistence: try to set the name multiple times as UI components might overwrite it during init
+      let namingAttempts = 0
+      const namingInterval = setInterval(() => {
+        namingAttempts++
+        const active = app.ui && app.ui.workflowManager ? app.ui.workflowManager.activeWorkflow : null
+        if (active) {
+          active.name = workflowName
+          if (typeof active.rename === 'function') active.rename(workflowName)
+        }
+        if (app.graph) app.graph.name = workflowName
+        if (namingAttempts >= 10) clearInterval(namingInterval)
+      }, 500)
+
       setTimeout(() => {
-        const node = app.graph.getNodeById(data.nodes[0].id)
-        app.canvas.centerOnNode(node)
+        const node = data.nodes && data.nodes[0] ? app.graph.getNodeById(data.nodes[0].id) : null
+        if (node) {
+          app.canvas.centerOnNode(node)
+        }
         eventBus.send(
           stringify({
             eventType: 'loadGraphData',
@@ -768,6 +914,10 @@ async function getConfig() {
 }
 
 async function loadWorkflow() {
+  if (artify_inject === 'readonly' || isIframe || artify_playground) {
+    console.log('[ArtifyInject] loadWorkflow aborted: in playground/readonly mode')
+    return
+  }
   const { app } = getComfyUIApp()
 
   if (!app || !app.loadGraphData) {
@@ -778,12 +928,57 @@ async function loadWorkflow() {
 
   const config = await getConfig()
   if (!config || !config.activeAppId) {
+    console.warn('[ArtifyInject] No active app found in config')
     return
   }
   const currentApp = await getAppById(config.activeAppId)
   if (!currentApp) {
+    console.warn('[ArtifyInject] Could not fetch current app')
     return
   }
+
+  const workflowName = currentApp.name || 'ArtifyLab Workflow'
   const { workflow } = currentApp.template
-  await app.loadGraphData(workflow)
+  console.log(`[ArtifyInject] Standalone mode: Loading workflow "${workflowName}"`)
+
+  isArtifyLoading = true
+  try {
+    // Inject name into graph data
+    if (workflow && typeof workflow === 'object') {
+      workflow.name = workflowName
+      workflow.extra_data = workflow.extra_data || {}
+      workflow.extra_data.workflow_name = workflowName
+    }
+
+    await app.loadGraphData(workflow)
+
+    // Apply name to runtime properties immediately
+    if (app.graph) {
+      app.graph.name = workflowName
+      if (!app.graph.extra) app.graph.extra = {}
+      app.graph.extra.workflow_name = workflowName
+    }
+    app.last_loaded_file = workflowName
+
+    if (app.ui && app.ui.workflowManager && app.ui.workflowManager.activeWorkflow) {
+      const active = app.ui.workflowManager.activeWorkflow
+      active.name = workflowName
+      if (typeof active.rename === 'function') active.rename(workflowName)
+    }
+
+    // Force name multiple times over the next few seconds to override late-loading resets
+    let standaloneNamingAttempts = 0
+    const standaloneNamingInterval = setInterval(() => {
+      standaloneNamingAttempts++
+      const active = app.ui && app.ui.workflowManager ? app.ui.workflowManager.activeWorkflow : null
+      if (active) {
+        active.name = workflowName
+        if (typeof active.rename === 'function') active.rename(workflowName)
+      }
+      if (app.graph) app.graph.name = workflowName
+      if (standaloneNamingAttempts >= 10) clearInterval(standaloneNamingInterval)
+    }, 500)
+  } finally {
+    isArtifyLoading = false
+  }
 }

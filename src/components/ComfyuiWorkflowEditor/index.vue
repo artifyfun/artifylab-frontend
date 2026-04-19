@@ -16,7 +16,7 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import ComfyuiPlayground from '../ComfyuiPlayground/index.vue'
 import ParamsManager from '../ParamsManager/index.vue'
 
-const props = defineProps(['template'])
+const props = defineProps(['template', 'name'])
 const emit = defineEmits(['onload'])
 
 const editorState = reactive({
@@ -42,7 +42,7 @@ const updateParamsNodes = (nodes) => {
 
 const onload = async () => {
   playground.value.updateParamsNodes(props.template.paramsNodes)
-  await playground.value.loadGraphData(props.template.workflow)
+  await playground.value.loadGraphData(props.template.workflow, props.name)
   await playground.value.updatePrompt()
   emit('onload')
   editorState.loading = false

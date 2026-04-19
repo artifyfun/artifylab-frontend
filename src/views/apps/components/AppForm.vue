@@ -117,8 +117,10 @@
 
   <!-- 工作流编辑器模态框 -->
   <WorkflowModal
+    v-if="showWorkflowModal"
     :show="showWorkflowModal"
-    :template="currentApp.template"
+    :template="activeTemplate"
+    :name="currentApp.name"
     @update:show="showWorkflowModal = $event"
     @save="handleWorkflowSave"
   />
@@ -161,6 +163,7 @@ const emit = defineEmits(['close', 'save'])
 
 // 内部状态
 const currentApp = ref(props.app)
+const activeTemplate = ref(null)
 const fileList = ref([])
 
 // 模态框状态
@@ -194,6 +197,7 @@ const handleSave = () => {
 
 // 处理编辑工作流
 const handleEditWorkflow = () => {
+  activeTemplate.value = JSON.parse(JSON.stringify(currentApp.value.template))
   showWorkflowModal.value = true
 }
 
@@ -252,10 +256,11 @@ const handleChange = async ({ file }) => {
   if (!workflow) {
     handleError(t('cannotReadWorkflowInfo'))
   } else {
-    if (!currentApp.value.template) {
-      currentApp.value.template = {}
+    // Clone existing template but inject new workflow
+    activeTemplate.value = {
+      ...(JSON.parse(JSON.stringify(currentApp.value.template)) || {}),
+      workflow: workflow
     }
-    currentApp.value.template.workflow = workflow
     showWorkflowModal.value = true
   }
 }

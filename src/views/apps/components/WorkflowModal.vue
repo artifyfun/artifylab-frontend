@@ -16,6 +16,7 @@
         ref="editorRef"
         style="height: 800px"
         :template="template"
+        :name="name"
         @onload="workflowLoading = false"
       />
     </div>
@@ -37,6 +38,10 @@ const props = defineProps({
   template: {
     type: Object,
     default: () => ({})
+  },
+  name: {
+    type: String,
+    default: 'ArtifyLab Workflow'
   },
 })
 

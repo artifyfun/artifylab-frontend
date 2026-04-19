@@ -21,7 +21,11 @@ const iframe = ref(null)
 
 const init = async () => {
   await appStore.initConfig()
-  state.url = `${appStore.config.comfyHost}?artify_inject=readonly`
+  if (!appStore.config.comfyHost) return
+  const url = new URL(appStore.config.comfyHost)
+  url.searchParams.set('artify_inject', 'readonly')
+  url.searchParams.set('artify_playground', 'true')
+  state.url = url.toString()
 }
 init()
 
@@ -29,15 +33,24 @@ const postMessage = (message) => {
   iframe.value.contentWindow.postMessage(message, '*')
 }
 
-const loadGraphData = (graphData) => {
+const loadGraphData = (graphData, name) => {
   const message = JSON.stringify({
     eventType: 'loadGraphData',
-    data: graphData
+    data: graphData,
+    name: name
   })
   postMessage(message)
   return new Promise((resolve) => {
     const handler = (event) => {
-      const { eventType } = JSON.parse(event.data)
+      let data = event.data
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data)
+        } catch (e) {
+          return
+        }
+      }
+      const { eventType } = data
       if (eventType === 'loadGraphData') {
         resolve()
         window.removeEventListener('message', handler)
@@ -54,7 +67,15 @@ const updatePrompt = () => {
   postMessage(message)
   return new Promise((resolve) => {
     const handler = (event) => {
-      const { eventType, data } = JSON.parse(event.data)
+      let dataStr = event.data
+      if (typeof dataStr === 'string') {
+        try {
+          dataStr = JSON.parse(dataStr)
+        } catch (e) {
+          return
+        }
+      }
+      const { eventType, data } = dataStr
       if (eventType === 'updatePrompt') {
         resolve(data)
         window.removeEventListener('message', handler)
@@ -73,7 +94,15 @@ const updateParamsNodes = (paramsNodes) => {
 }
 
 const handleMessage = (event) => {
-  const { eventType, data } = JSON.parse(event.data)
+  let dataStr = event.data
+  if (typeof dataStr === 'string') {
+    try {
+      dataStr = JSON.parse(dataStr)
+    } catch (e) {
+      return
+    }
+  }
+  const { eventType, data } = dataStr
   if (eventType === 'updateParamsNodes') {
     const paramsNodes = data.map((node) => {
       return {
