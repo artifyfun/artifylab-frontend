@@ -13,36 +13,56 @@ let isArtifyLoading = false
 // Prevent ComfyUI from restoring previous session tabs or graphs in playground/readonly mode
 if (artify_inject === 'readonly' || window.self !== window.top || artify_playground) {
   try {
-    const keysToClear = [
-      'Comfy.App.Graph',
-      'Comfy.WorkflowManager.Workflows',
-      'Comfy.WorkflowManager.ActiveWorkflow',
-      'Comfy.LastWorkflow',
-      'comfy_workflow_states',
-      'comfy.workflow.manager.workflows',
-      'comfy.workflow.manager.activeWorkflow',
-    ]
-    keysToClear.forEach((key) => {
-      localStorage.removeItem(key)
-      sessionStorage.removeItem(key)
-    })
+    // 1. Attempt to clear IndexedDB as modern ComfyUI and extensions use it for session persistence
+    if (window.indexedDB) {
+      window.indexedDB.deleteDatabase('comfyui')
+    }
 
-    // Sabotage localStorage.getItem/setItem to prevent any late-loading extensions from restoring session
+    // 2. Deep clear all ComfyUI related storage keys from localStorage and sessionStorage
+    const clearRelatedStorage = (storage) => {
+      try {
+        const keys = Object.keys(storage)
+        keys.forEach((key) => {
+          const k = key.toLowerCase()
+          if (
+            k.includes('comfy') ||
+            k.includes('workflow') ||
+            k.includes('graph') ||
+            k.includes('workspace') ||
+            k.includes('litegraph')
+          ) {
+            storage.removeItem(key)
+          }
+        })
+      } catch (e) {
+        /* ignore */
+      }
+    }
+
+    clearRelatedStorage(localStorage)
+    clearRelatedStorage(sessionStorage)
+
+    // 3. Sabotage localStorage.getItem to prevent any late-loading extensions from restoring previous sessions
     const originalGetItem = window.localStorage.getItem
     window.localStorage.getItem = function (key) {
-      if (
-        key &&
-        (key.includes('WorkflowManager') ||
-          key.includes('Comfy.App.Graph') ||
-          key.includes('Comfy.LastWorkflow') ||
-          key.includes('comfy_workflow_states'))
-      ) {
-        return null
+      if (key && typeof key === 'string') {
+        const k = key.toLowerCase()
+        if (
+          k.includes('workflowmanager') ||
+          k.includes('comfy.app.graph') ||
+          k.includes('comfy.lastworkflow') ||
+          k.includes('comfy_workflow_states') ||
+          k.includes('workspace') ||
+          k.includes('workspace_manager') ||
+          k.includes('litegraph')
+        ) {
+          return null
+        }
       }
       return originalGetItem.apply(this, arguments)
     }
 
-    console.log('[ArtifyInject] Sabotaged ComfyUI session restoration to prevent tab auto-switch')
+    console.log('[ArtifyInject] Deep cleaned ComfyUI session storage and IndexedDB')
   } catch (e) {
     // Ignore storage errors
   }
@@ -152,7 +172,7 @@ window.addEventListener('load', function () {
             const message = JSON.stringify({ eventType: 'onload' })
             window.parent.postMessage(message, '*')
           })
-        }, 1000)
+        }, 2500)
       } else {
         // Standalone mode: Load the active app workflow automatically
         handleComfyuiContext(() => {
@@ -267,20 +287,13 @@ function handleComfyuiContext(onReady) {
 }
 
 function doHandleComfyuiContext(app, LiteGraph, onReady) {
-  // Known ArtifyLab event types - only process these
-  const ARTIFY_EVENT_TYPES = ['updateParamsNodes', 'centerOnNode', 'loadGraphData', 'updatePrompt']
+  const isArtifyMode = artify_inject === 'readonly' || isIframe || artify_playground
 
-  // Protect loadGraphData from being called by ComfyUI's internal restoration
-  const originalLoadGraphData = app.loadGraphData
-  if (originalLoadGraphData) {
-    app.loadGraphData = async function (data, ...args) {
-      if (!isArtifyLoading && (artify_inject === 'readonly' || isIframe || artify_playground)) {
-        console.log('[ArtifyInject] Blocked external/internal loadGraphData call to keep playground state')
-        return
-      }
-      return originalLoadGraphData.apply(this, [data, ...args])
-    }
-  }
+  if (isArtifyMode) {
+    // Known ArtifyLab event types - only process these
+    const ARTIFY_EVENT_TYPES = ['updateParamsNodes', 'centerOnNode', 'loadGraphData', 'updatePrompt']
+
+  // (loadGraphData protection removed as deep storage cleanup handles session isolation)
 
   const eventBus = {
     callbacks: [],
@@ -338,13 +351,8 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
       }
 
       // Disable the tab switching method
-      const originalSwitch = manager.switchToWorkflow
-      if (typeof originalSwitch === 'function') {
-        manager.switchToWorkflow = function () {
-          console.log('[ArtifyInject] Blocked workflow/tab switch in playground mode')
-          return
-        }
-      }
+      // Allow switchToWorkflow but enforce single workflow elsewhere
+      // (Blocking it entirely was causing users to get stuck on the initial blank tab)
 
       // Hack: Force only one workflow to exist and be active
       // We do this by intercepting the workflows array if possible, or just clearing it
@@ -767,6 +775,31 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
           active.name = workflowName
           if (typeof active.rename === 'function') active.rename(workflowName)
         }
+        const manager = app.ui && app.ui.workflowManager ? app.ui.workflowManager : null
+        if (manager && manager.workflows) {
+          // Find our workflow by name or fallback to the first one
+          const target = manager.workflows.find(w => w.name === workflowName || w.displayName === workflowName) || manager.workflows[0]
+          if (target) {
+            // Force rename
+            target.name = workflowName
+            if (target.displayName !== undefined) target.displayName = workflowName
+            if (typeof target.rename === 'function') target.rename(workflowName)
+
+            // Force switch if not active
+            if (manager.activeWorkflow && manager.activeWorkflow.id !== target.id) {
+              console.log('[ArtifyInject] Switching back to target workflow:', workflowName)
+              try { manager.switchToWorkflow(target.id) } catch (e) { /* ignore */ }
+            }
+
+            // Close all others
+            manager.workflows.forEach(w => {
+              if (w.id !== target.id) {
+                try { manager.closeWorkflow(w.id) } catch (e) { /* ignore */ }
+              }
+            })
+          }
+          if (typeof manager.refresh === 'function') manager.refresh()
+        }
         if (app.graph) app.graph.name = workflowName
         if (namingAttempts >= 10) clearInterval(namingInterval)
       }, 500)
@@ -793,6 +826,8 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
       )
     }
   })
+
+  }
 
   // Now notify parent that we're ready (eventBus.on is registered)
   if (onReady) {
@@ -983,6 +1018,29 @@ async function loadWorkflow() {
         if (active.metadata) active.metadata.name = workflowName
         if (typeof active.rename === 'function') active.rename(workflowName)
         if (typeof app.ui.workflowManager.refresh === 'function') app.ui.workflowManager.refresh()
+
+        // Enforce single workflow and correct identity
+        const manager = app.ui && app.ui.workflowManager ? app.ui.workflowManager : null
+        if (manager && manager.workflows) {
+          const target = manager.workflows.find(w => w.name === workflowName || w.displayName === workflowName) || manager.workflows[0]
+          if (target) {
+            target.name = workflowName
+            if (target.displayName !== undefined) target.displayName = workflowName
+            if (target.metadata) target.metadata.name = workflowName
+            if (typeof target.rename === 'function') target.rename(workflowName)
+
+            if (manager.activeWorkflow && manager.activeWorkflow.id !== target.id) {
+              try { manager.switchToWorkflow(target.id) } catch (e) { /* ignore */ }
+            }
+
+            manager.workflows.forEach(w => {
+              if (w.id !== target.id) {
+                try { manager.closeWorkflow(w.id) } catch (e) { /* ignore */ }
+              }
+            })
+          }
+          if (typeof manager.refresh === 'function') manager.refresh()
+        }
       }
       if (app.graph) {
         app.graph.name = workflowName
