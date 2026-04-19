@@ -7,46 +7,73 @@ window.addEventListener("load", function () {
 
   if (artify_inject === "readonly") {
     loadCssCode(
-      `.comfy-menu {
-          display: none !important;
-        }
-        .comfyui-body-top {
-          display: none !important;
-        }
-        .comfyui-body-left {
-          display: none !important;
-        }
-        .comfy-menu-hamburger {
-          display: none !important;
-        }
-        .workflow-tabs-container {
-          display: none !important;
-        }
-        .actionbar {
+      `/* Hide main UI containers - use !important to override inline styles */
+        body.litegraph .comfyui-body-top,
+        body.litegraph .comfyui-body-left,
+        body.litegraph .comfyui-body-right,
+        body.litegraph .comfyui-body-bottom,
+        body.litegraph .workflow-tabs-container,
+        body.litegraph .workflow-tabs-container-desktop {
           display: none !important;
         }
 
-        .litemenu-entry.submenu.selected {
-          color: yellow !important;
-        }
-
-        .litemenu-entry.submenu.selected-output {
-          color: yellow !important;
-        }
-
-        rgthree-progress-bar {
+        /* Hide side toolbars */
+        body.litegraph .side-tool-bar-container,
+        body.litegraph .floating-sidebar,
+        body.litegraph .connected-sidebar {
           display: none !important;
         }
 
-        .pysssss-image-feed {
+        /* Hide menu related elements */
+        body.litegraph .comfy-menu-button-wrapper,
+        body.litegraph .comfy-command-menu {
           display: none !important;
         }
-        .p-panel.p-component.selection-toolbox {
+
+        /* Hide selection toolbox */
+        body.litegraph .selection-toolbox {
+          display: none !important;
+        }
+
+        /* Hide rgthree and other extension elements */
+        body.litegraph rgthree-progress-bar,
+        body.litegraph .pysssss-image-feed {
           display: none !important;
         }
       `,
       window
     );
+
+    // Also use JavaScript to directly hide elements (in case CSS isn't enough)
+    function hideReadonlyUI() {
+      const selectors = [
+        '.comfyui-body-top',
+        '.comfyui-body-left',
+        '.comfyui-body-right',
+        '.comfyui-body-bottom',
+        '.workflow-tabs-container',
+        '.workflow-tabs-container-desktop',
+        '.side-tool-bar-container',
+        '.floating-sidebar',
+        '.connected-sidebar',
+        '.comfy-menu-button-wrapper',
+        '.comfy-command-menu',
+        '.selection-toolbox',
+        'rgthree-progress-bar'
+      ];
+
+      selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+          el.style.display = 'none';
+        });
+      });
+    }
+
+    // Run hiding immediately and then retry a few times
+    hideReadonlyUI();
+    setTimeout(hideReadonlyUI, 100);
+    setTimeout(hideReadonlyUI, 500);
+    setTimeout(hideReadonlyUI, 1000);
   }
 
   let counter = 0;
