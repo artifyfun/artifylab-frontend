@@ -315,10 +315,12 @@ function doHandleComfyuiContext(app, LiteGraph, onReady) {
     }
   })
 
-  app.canvas.allow_dragnodes = false
-  app.canvas.allow_reconnect_links = false
-  app.canvas.allow_searchbox = false
-  app.handleFile = () => { }
+  if (artify_inject === 'readonly') {
+    app.canvas.allow_dragnodes = false
+    app.canvas.allow_reconnect_links = false
+    app.canvas.allow_searchbox = false
+    app.handleFile = () => {}
+  }
 
   // Prevent multi-tab/workflow manager from switching tabs or restoring sessions in playground mode
   if (app.ui && app.ui.workflowManager && (artify_inject === 'readonly' || isIframe || artify_playground)) {
@@ -948,6 +950,8 @@ async function loadWorkflow() {
       workflow.name = workflowName
       workflow.extra_data = workflow.extra_data || {}
       workflow.extra_data.workflow_name = workflowName
+      workflow.extra = workflow.extra || {}
+      workflow.extra.workflow_name = workflowName
     }
 
     await app.loadGraphData(workflow)
@@ -963,7 +967,9 @@ async function loadWorkflow() {
     if (app.ui && app.ui.workflowManager && app.ui.workflowManager.activeWorkflow) {
       const active = app.ui.workflowManager.activeWorkflow
       active.name = workflowName
+      if (active.displayName !== undefined) active.displayName = workflowName
       if (typeof active.rename === 'function') active.rename(workflowName)
+      if (typeof app.ui.workflowManager.refresh === 'function') app.ui.workflowManager.refresh()
     }
 
     // Force name multiple times over the next few seconds to override late-loading resets
@@ -973,10 +979,18 @@ async function loadWorkflow() {
       const active = app.ui && app.ui.workflowManager ? app.ui.workflowManager.activeWorkflow : null
       if (active) {
         active.name = workflowName
+        if (active.displayName !== undefined) active.displayName = workflowName
+        if (active.metadata) active.metadata.name = workflowName
         if (typeof active.rename === 'function') active.rename(workflowName)
+        if (typeof app.ui.workflowManager.refresh === 'function') app.ui.workflowManager.refresh()
       }
-      if (app.graph) app.graph.name = workflowName
-      if (standaloneNamingAttempts >= 10) clearInterval(standaloneNamingInterval)
+      if (app.graph) {
+        app.graph.name = workflowName
+        if (!app.graph.extra) app.graph.extra = {}
+        app.graph.extra.workflow_name = workflowName
+      }
+      app.last_loaded_file = workflowName
+      if (standaloneNamingAttempts >= 20) clearInterval(standaloneNamingInterval)
     }, 500)
   } finally {
     isArtifyLoading = false
